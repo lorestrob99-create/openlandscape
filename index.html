@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - DSS Territoriale & NBS</title>
+  <title>OpenLandscape - Piattaforma Territoriale & NBS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,7 +17,7 @@
     body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0a0a; color: #eee; overflow: hidden; user-select: none; }
     #map { width: 100vw; height: 100vh; }
     
-    /* Header Desktop */
+    /* Header Bar */
     .header-bar {
       position: absolute; top: 10px; left: 10px; right: 10px;
       display: flex; justify-content: space-between; align-items: center;
@@ -25,7 +25,7 @@
       padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-panel);
       z-index: 30; gap: 8px; flex-wrap: wrap;
     }
-    .title-group { display: flex; align-items: center; gap: 8px; }
+    .title-group { display: flex; align-items: center; gap: 10px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
     .search-box { display: flex; gap: 6px; }
@@ -45,12 +45,12 @@
     .cost-badge { background: #1a2238; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #3d5a80; color: #98c1d9; }
     .temp-badge { background: #3d1308; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #9e2a2b; color: #fec5bb; }
 
-    /* Toolbox Desktop */
+    /* Toolbox */
     .toolbox {
       position: absolute; top: 68px; left: 10px;
       background: var(--bg-panel); backdrop-filter: blur(10px);
       padding: 12px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 210px;
+      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 215px;
       max-height: calc(100vh - 140px); overflow-y: auto;
     }
     .toolbox label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.8px; margin-top: 4px; }
@@ -64,13 +64,13 @@
 
     /* Target di Piano */
     .target-box {
-      margin-top: 6px; background: rgba(0,0,0,0.4); padding: 6px; border-radius: 6px; border: 1px solid #333;
+      margin-top: 4px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px; border: 1px solid #333;
     }
     .target-title { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
     .target-bar-bg { background: #262626; height: 5px; border-radius: 3px; overflow: hidden; }
     .target-bar-fill { background: #52B788; height: 100%; width: 0%; transition: width 0.3s; }
 
-    /* Pannello Ispezione / Dettaglio Cella (Tasto Destro) */
+    /* Scheda Ispezione Cella (Tasto Destro) */
     .inspect-modal {
       position: absolute; top: 68px; right: 10px; width: 250px;
       background: var(--bg-panel); backdrop-filter: blur(10px);
@@ -83,7 +83,7 @@
     .inspect-row { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
     .inspect-row span:first-child { color: #999; }
 
-    /* Barra Info Hover in Basso */
+    /* Barra Info Hover */
     #cell-info {
       position: absolute; bottom: 14px; left: 10px;
       background: var(--bg-panel); padding: 8px 12px; border-radius: 6px;
@@ -106,7 +106,7 @@
 </head>
 <body>
 
-  <!-- Barra Header -->
+  <!-- Header -->
   <div class="header-bar">
     <div class="title-group">
       <div class="title">OpenLandscape</div>
@@ -129,11 +129,11 @@
     </div>
   </div>
 
-  <!-- Toolbox Disegno & Target -->
+  <!-- Toolbox Laterale -->
   <div class="toolbox">
     <div style="font-size: 10px; color: #bbb; display: flex; justify-content: space-between;">
       <span>Modalità: <b>Trascina mouse</b></span>
-      <span style="color:#52B788;">Tasto Dx = Info</span>
+      <span style="color:#52B788;">Dx = Info</span>
     </div>
 
     <label>Interventi NBS</label>
@@ -143,14 +143,14 @@
     <button class="tool-btn" data-action="prato">🌸 Prato Fiorito <span>+8</span></button>
     <button class="tool-btn" data-action="depav">🧱 De-pavimentazione <span>+20</span></button>
     
-    <label>Infrastrutture</label>
+    <label>Infrastrutture & Selezione</label>
     <button class="tool-btn" data-action="ciclabile">🚲 Ciclabile <span>+5</span></button>
     <button class="tool-btn" data-action="select_only">🔍 Seleziona / Info</button>
     <button class="tool-btn" data-action="reset">🔄 Ripristina</button>
 
     <label>Target di Piano</label>
     <div class="target-box">
-      <div class="target-title"><span>Obiettivo Forestale (30%)</span><span id="target-forest-val">0%</span></div>
+      <div class="target-title"><span>Target Forestale (30%)</span><span id="target-forest-val">0%</span></div>
       <div class="target-bar-bg"><div class="target-bar-fill" id="target-forest-bar"></div></div>
     </div>
     <div class="target-box">
@@ -161,13 +161,13 @@
     <button class="btn" id="export-geojson-btn" style="margin-top: 8px; width: 100%;">📥 Salva per QGIS</button>
   </div>
 
-  <!-- Modal Ispezione Dettaglio (Tasto Destro / Clic) -->
+  <!-- Ispezione Pre/Post (Tasto Destro) -->
   <div class="inspect-modal" id="inspect-modal">
     <div class="inspect-header">
       <span class="inspect-title" id="inspect-cell-id">Cella #---</span>
       <span class="inspect-close" onclick="closeInspectModal()">✕</span>
     </div>
-    <div class="inspect-row"><span>Coordinate:</span><span id="inspect-coords">-</span></div>
+    <div class="inspect-row"><span>Coordinate UTM:</span><span id="inspect-coords">-</span></div>
     <div class="inspect-row"><span>Uso del Suolo Originario:</span><b id="inspect-landuse-pre">-</b></div>
     <div class="inspect-row"><span>Stato di Progetto:</span><b id="inspect-landuse-post" style="color:var(--accent);">-</b></div>
     <div class="inspect-row"><span>Bio-Punti generati:</span><span id="inspect-points">-</span></div>
@@ -203,9 +203,8 @@
     let isPinMode = false;
     let isSatellite = false;
     let selectedCellId = null;
-    let constraintFeatures = []; // Buffer / Aree a vincolo caricate
+    let constraintFeatures = [];
 
-    // Gestione selezione tool
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -222,13 +221,13 @@
       maxZoom: 22
     });
 
-    // Disattiva il drag di mappa solo mentre si dipinge
+    // Gestione pittura a trascinamento mouse
     map.on('mousedown', (e) => {
       if (e.originalEvent.button === 0 && activeTool !== 'select_only') {
         const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
         if (feats.length > 0) {
           isMouseDown = true;
-          map.dragPan.disable();
+          map.dragPan.disable(); // Disabilita trascinamento mappa durante la pittura
           applyActionToCell(feats[0]);
         }
       }
@@ -239,20 +238,20 @@
       map.dragPan.enable();
     });
 
-    // Geocoding ricerca
+    // Ricerca Geografica
     document.getElementById('address-search-btn').addEventListener('click', async () => {
       const q = document.getElementById('address-input').value.trim();
       if (!q) return;
-      document.getElementById('cell-info').innerText = `Ricerca: ${q}...`;
+      document.getElementById('cell-info').innerText = `Ricerca in corso: ${q}...`;
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (data && data.length > 0) {
         map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 17 });
-        document.getElementById('cell-info').innerText = `Località trovata: ${data[0].display_name}`;
+        document.getElementById('cell-info').innerText = `Inquadrata: ${data[0].display_name}`;
       }
     });
 
-    // Generazione Ambito Quadrato 100x100 (10.000 celle da 3x3m)
+    // Generazione Ambito Quadrato 100x100 (10.000 micro-celle da 3x3m)
     document.getElementById('new-grid-btn').addEventListener('click', () => {
       isPinMode = true;
       document.getElementById('cell-info').innerText = "Fai clic sulla mappa per posizionare il quadratone di progetto (10.000 celle 3x3m).";
@@ -267,7 +266,6 @@
         return;
       }
 
-      // Se clicchiamo in modalità select_only con tasto sinistro
       if (activeTool === 'select_only') {
         const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
         if (feats.length > 0) openInspectModal(feats[0]);
@@ -278,16 +276,14 @@
     map.on('contextmenu', (e) => {
       e.preventDefault();
       const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
-      if (feats.length > 0) {
-        openInspectModal(feats[0]);
-      }
+      if (feats.length > 0) openInspectModal(feats[0]);
     });
 
     function generateSquareGrid(centerLon, centerLat) {
       document.getElementById('cell-info').innerText = "Costruzione griglia quadrata 100x100 (10.000 celle)...";
       const centerUtm = proj4("EPSG:4326", "EPSG:32632", [centerLon, centerLat]);
       const cellSize = 3.0;
-      const countSide = 100; // 100 x 100 = 10.000 celle esatte
+      const countSide = 100; // 100x100 = 10.000 celle
       const halfExtent = (countSide * cellSize) / 2;
 
       cellsData = [];
@@ -344,7 +340,7 @@
       if (!map.getSource('cells-source')) {
         map.addSource('cells-source', { type: 'geojson', data: geojson });
 
-        // Riempimento celle
+        // Riempimento cromatico celle
         map.addLayer({
           id: 'cells-layer',
           type: 'fill',
@@ -364,7 +360,7 @@
           }
         });
 
-        // Bordo comune
+        // Contorno geometrico normale
         map.addLayer({
           id: 'cells-outline',
           type: 'line',
@@ -376,7 +372,7 @@
           }
         });
 
-        // Evidenziazione perimetro fluorescente cella selezionata
+        // Evidenziazione Fluorescente perimetro cella ispezionata
         map.addLayer({
           id: 'cell-highlight',
           type: 'line',
@@ -389,14 +385,13 @@
           }
         });
 
-        // Hover: rilevamento immediato uso suolo esistente
+        // Hover dinamico con lettura suolo istantanea
         map.on('mousemove', 'cells-layer', (e) => {
           if (e.features && e.features.length > 0) {
             const f = e.features[0];
             const info = detectCurrentLanduse(f);
             document.getElementById('cell-info').innerHTML = `🔍 <b>Cella #${f.properties.id}</b> | Uso di fatto: <b>${info}</b> | Stato Progetto: <b>${f.properties.stato}</b>`;
 
-            // Se stiamo trascinando col tasto sinistro, dipingi
             if (isMouseDown && activeTool !== 'select_only') {
               applyActionToCell(f);
             }
@@ -431,7 +426,6 @@
     function checkConstraintIntersection(feature) {
       if (constraintFeatures.length === 0) return false;
       const c = feature.geometry.coordinates[0][0];
-      // Verifica semplice su coordinate box
       return constraintFeatures.some(poly => {
         return poly.bbox && c[0] >= poly.bbox[0] && c[0] <= poly.bbox[2] && c[1] >= poly.bbox[1] && c[1] <= poly.bbox[3];
       });
