@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - Piattaforma Territoriale Collaborativa</title>
+  <title>OpenLandscape - Pilota Territoriale</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -96,7 +96,6 @@
     const SUPABASE_ANON_KEY = "sb_publishable_ATgwPpdPd-OGDmRCo4Gpng_3P5u-j5H";
     const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Parametri interventi: punti e costo indicativo per cella da 25 m² (5x5 m)
     const TOOL_SPECS = {
       bosco: { score: 10, costPerM2: 12, name: 'Bosco' },
       umida: { score: 15, costPerM2: 25, name: 'Zona Umida' },
@@ -108,9 +107,8 @@
     };
 
     let activeTool = "bosco";
-    let cellsMap = new Map(); // Archivio rapido delle celle per id
+    let cellsData = [];
     let initialZoomDone = false;
-    let isFetching = false;
 
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -127,64 +125,86 @@
       zoom: 17
     });
 
-    // Carica dinamicamente le celle visibili nel viewport
-    async function fetchViewportCells() {
-      if (isFetching) return;
-      isFetching = true;
+    async function loadCells() {
+      let allRows = [];
+      const batchSize = 1000;
+      const targetBatches = 20;
 
-      const bounds = map.getBounds();
-      const pMin = proj4("EPSG:4326", "EPSG:32632", [bounds.getWest(), bounds.getSouth()]);
-      const pMax = proj4("EPSG:4326", "EPSG:32632", [bounds.getEast(), bounds.getNorth()]);
+      for (let i = 0; i < targetBatches; i++) {
+        const from = i * batchSize;
+        const to = from + batchSize - 1;
+        const { data, error } = await dbClient
+          .from('celle_territorio')
+          .select('*')
+          .range(from, to);
 
-      const { data, error } = await dbClient
-        .from('celle_territorio')
-        .select('*')
-        .gte('x_coord', pMin[0] - 10)
-        .lte('x_coord', pMax[0] + 10)
-        .gte('y_coord', pMin[1] - 10)
-        .lte('y_coord', pMax[1] + 10)
-        .limit(4000);
-
-      isFetching = false;
-
-      if (!error && data) {
-        data.forEach(cell => cellsMap.set(String(cell.cell_id), cell));
-        renderCells();
-        updateMetrics();
+        if (error || !data || data.length === 0) break;
+        allRows = allRows.concat(data);
+        document.getElementById('cell-info').innerText = `Caricamento celle: ${allRows.length}...`;
       }
+
+      cellsData = allRows;
+      renderCells();
+      updateMetrics();
+      document.getElementById('cell-info').innerText = `Territorio pronto (${cellsData.length} celle).`;
     }
 
     function buildGeoJSON() {
-      const features = Array.from(cellsMap.values()).map(cell => {
-        const x = parseFloat(cell.x_coord);
-        const y = parseFloat(cell.y_coord);
+      return {
+        type: "FeatureCollection",
+        features: cellsData.map(cell => {
+          const x = parseFloat(cell.x_coord);
+          const y = parseFloat(cell.y_coord);
 
-        const p1 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y - 2.5]);
-        const p2 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y - 2.5]);
-        const p3 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y + 2.5]);
-        const p4 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y + 2.5]);
+          const p1 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y - 2.5]);
+          const p2 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y - 2.5]);
+          const p3 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y + 2.5]);
+          const p4 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y + 2.5]);
 
-        return {
-          type: "Feature",
-          properties: {
-            id: cell.cell_id,
-            stato: cell.stato_progetto || 'stato_di_fatto',
-            eco_score: cell.eco_score || 0
-          },
-          geometry: {
-            type: "Polygon",
-            coordinates: [[p1, p2, p3, p4, p1]]
-          }
-        };
-      });
-
-      return { type: "FeatureCollection", features };
+          return {
+            type: "Feature",
+            properties: {
+              id: cell.cell_id,
+              stato: cell.stato_progetto || 'stato_di_fatto',
+              eco_score: cell.eco_score || 0
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [[p1, p2, p3, p4, p1]]
+            }
+          };
+        })
+      };
     }
 
     function renderCells() {
+      if (!cellsData || cellsData.length === 0) return;
+
       const geojsonData = buildGeoJSON();
 
-      if (!map.getSource('cells-source')) {
+      if (!initialZoomDone) {
+        let minLon = 180, maxLon = -180, minLat = 90, maxLat = -90;
+        geojsonData.features.forEach(f => {
+          const coords = f.geometry.coordinates[0];
+          coords.forEach(c => {
+            if (c[0] < minLon) minLon = c[0];
+            if (c[0] > maxLon) maxLon = c[0];
+            if (c[1] < minLat) minLat = c[1];
+            if (c[1] > maxLat) maxLat = c[1];
+          });
+        });
+
+        map.fitBounds([[minLon, minLat], [maxLon, maxLat]], {
+          padding: 60,
+          maxZoom: 18,
+          duration: 0
+        });
+        initialZoomDone = true;
+      }
+
+      if (map.getSource('cells-source')) {
+        map.getSource('cells-source').setData(geojsonData);
+      } else {
         map.addSource('cells-source', { type: 'geojson', data: geojsonData });
 
         map.addLayer({
@@ -200,10 +220,10 @@
               'prato', '#B5E48C',
               'depav', '#52B788',
               'ciclabile', '#DDA15E',
-              '#242424'
+              '#2b2b2b'
             ],
             'fill-opacity': 0.68,
-            'fill-outline-color': 'rgba(0, 255, 136, 0.3)'
+            'fill-outline-color': '#00ff88'
           }
         });
 
@@ -237,30 +257,27 @@
           const newStatus = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
           const newScore = spec.score;
 
-          // Aggiornamento locale immediato
-          const target = cellsMap.get(String(cellId));
+          document.getElementById('cell-info').innerHTML = `<b>Cella:</b> ${cellId} | <b>Intervento:</b> ${spec.name}`;
+
+          const target = cellsData.find(c => String(c.cell_id) === String(cellId));
           if (target) {
             target.stato_progetto = newStatus;
             target.eco_score = newScore;
           }
 
-          renderCells();
+          map.getSource('cells-source').setData(buildGeoJSON());
           updateMetrics();
-          document.getElementById('cell-info').innerHTML = `<b>Cella:</b> ${cellId} | <b>Intervento:</b> ${spec.name}`;
 
-          // Aggiornamento database cloud
           await dbClient.from('celle_territorio')
             .update({ stato_progetto: newStatus, eco_score: newScore })
             .eq('cell_id', cellId);
         });
-      } else {
-        map.getSource('cells-source').setData(geojsonData);
       }
     }
 
     function calculateConnectivity() {
       const forestKeys = new Set();
-      cellsMap.forEach(c => {
+      cellsData.forEach(c => {
         if (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale') {
           forestKeys.add(`${Math.round(c.x_coord)},${Math.round(c.y_coord)}`);
         }
@@ -278,9 +295,9 @@
     function updateMetrics() {
       let baseScore = 0;
       let totalCost = 0;
-      const cellAreaM2 = 25; // Cella 5x5 metri
+      const cellAreaM2 = 25;
 
-      cellsMap.forEach(c => {
+      cellsData.forEach(c => {
         baseScore += (c.eco_score || 0);
         const spec = TOOL_SPECS[c.stato_progetto];
         if (spec && spec.costPerM2) {
@@ -297,28 +314,6 @@
       document.getElementById('total-cost').innerText = `Costo: ${totalCost.toLocaleString('it-IT')} €`;
     }
 
-    // Supabase Multiutente in Tempo Reale
-    function setupRealtime() {
-      dbClient
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'celle_territorio' },
-          (payload) => {
-            const updated = payload.new;
-            if (cellsMap.has(String(updated.cell_id))) {
-              const cell = cellsMap.get(String(updated.cell_id));
-              cell.stato_progetto = updated.stato_progetto;
-              cell.eco_score = updated.eco_score;
-              renderCells();
-              updateMetrics();
-            }
-          }
-        )
-        .subscribe();
-    }
-
-    // Esportazione GeoJSON
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       const geojsonData = buildGeoJSON();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojsonData));
@@ -331,13 +326,7 @@
     });
 
     map.on('load', () => {
-      fetchViewportCells();
-      setupRealtime();
-    });
-
-    // Ricarica dinamica al pan/zoom della mappa
-    map.on('moveend', () => {
-      fetchViewportCells();
+      loadCells();
     });
   </script>
 </body>
