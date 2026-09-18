@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - DSS Territoriale Analitico (1x1m)</title>
+  <title>OpenLandscape - DSS Territoriale Esecutivo (1x1m)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,6 +17,7 @@
     body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0c10; color: #eee; overflow: hidden; user-select: none; }
     #map { width: 100vw; height: 100vh; }
 
+    /* Barra Header */
     .header-bar {
       position: absolute; top: 10px; left: 10px; right: 10px;
       display: flex; justify-content: space-between; align-items: center;
@@ -44,11 +45,12 @@
     .cost-badge { background: #1a2238; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #3d5a80; color: #98c1d9; }
     .corridor-badge { background: #2d1810; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #d97706; color: #fde68a; }
 
+    /* Toolbox Laterale */
     .toolbox {
       position: absolute; top: 68px; left: 10px;
       background: var(--bg-panel); backdrop-filter: blur(12px);
       padding: 12px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 220px;
+      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 225px;
       max-height: calc(100vh - 140px); overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
     }
     .toolbox label { font-size: 10px; text-transform: uppercase; color: #8892b0; letter-spacing: 0.8px; margin-top: 4px; }
@@ -60,6 +62,7 @@
     .tool-btn:hover { background: #232732; }
     .tool-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
 
+    /* Legenda Dettagliata Stato di Fatto */
     .legend-box {
       margin-top: 4px; background: rgba(0,0,0,0.35); padding: 8px; border-radius: 6px; border: 1px solid #2d313d;
       font-size: 10px; display: flex; flex-direction: column; gap: 4px;
@@ -67,6 +70,7 @@
     .legend-row { display: flex; align-items: center; gap: 6px; }
     .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
+    /* Target di Piano */
     .target-box {
       margin-top: 4px; background: rgba(0,0,0,0.35); padding: 6px; border-radius: 6px; border: 1px solid #2d313d;
     }
@@ -74,6 +78,7 @@
     .target-bar-bg { background: #21242c; height: 5px; border-radius: 3px; overflow: hidden; }
     .target-bar-fill { background: #52B788; height: 100%; width: 0%; transition: width 0.3s; }
 
+    /* Scheda Ispezione Cella (Tasto Destro) */
     .inspect-modal {
       position: absolute; top: 68px; right: 10px; width: 280px;
       background: var(--bg-panel); backdrop-filter: blur(12px);
@@ -92,6 +97,7 @@
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
+    /* Ottimizzazione Mobile: Bottom Sheet */
     @media (max-width: 768px) {
       .header-bar { top: 0; left: 0; right: 0; border-radius: 0; }
       .search-box { width: 100%; }
@@ -107,6 +113,7 @@
 </head>
 <body>
 
+  <!-- Header -->
   <div class="header-bar">
     <div class="title-group">
       <div class="title">OpenLandscape</div>
@@ -125,6 +132,7 @@
     </div>
   </div>
 
+  <!-- Toolbox Laterale -->
   <div class="toolbox">
     <div style="font-size: 10px; color: #aaa; display: flex; justify-content: space-between;">
       <span>Scala: <b>1x1m (1 m²)</b></span>
@@ -161,6 +169,7 @@
     <button class="btn" id="export-geojson-btn" style="margin-top: 6px; width: 100%;">📥 Salva per QGIS</button>
   </div>
 
+  <!-- Scheda Ispezione Cella (Tasto Destro) -->
   <div class="inspect-modal" id="inspect-modal">
     <div class="inspect-header">
       <span class="inspect-title" id="inspect-cell-id">Cella #--- (1x1m)</span>
@@ -181,7 +190,7 @@
   <script>
     proj4.defs("EPSG:32632", "+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs");
 
-    // Nomenclatura descrittiva estesa per ciascuna classe di uso del suolo
+    // Metadati e classi estese d'uso del suolo reale
     const LANDUSE_META = {
       seminativo: { name: 'Seminativo / Coltivo Intensivo', baseScore: 0, color: '#9c824a' },
       vigneto_frutteto: { name: 'Vigneto / Frutteto Specializzato', baseScore: 2, color: '#b08968' },
@@ -194,25 +203,24 @@
     };
 
     // Matrice Costi Differenziali Esecutivi (€/m²)
-    // Tiene conto delle lavorazioni reali: scarifica asfalto, bonifica suolo, espianto ceppi, fornitura terra vegetale
     const COST_MATRIX = {
       bosco: {
-        strada_asfalto: 85,          // Taglio, demolizione pacchetto bituminoso, scavo a sezione, terra agraria, sesto d'impianto
-        piazzale_impermeabile: 70,   // De-impermeabilizzazione, sottofondo drenante, messa a dimora
-        vigneto_frutteto: 24,        // Espianto ceppaie, rippatura terreno, piantumazione alberi forestali
-        seminativo: 14,              // Lavorazione superficiale del terreno, fornitura e posa essenze forestali
-        prato_stabile: 16,           // Scavo buche d'impianto, pacciamatura biodegradabile, alberi
+        strada_asfalto: 85,          // Scarifica asfalto, scavo, terra agraria, sesto d'impianto
+        piazzale_impermeabile: 70,   // De-impermeabilizzazione, sottofondo, piantumazione
+        vigneto_frutteto: 24,        // Espianto ceppaie, rippatura, messa a dimora alberi
+        seminativo: 14,              // Lavorazione terreno e piantumazione essenze
+        prato_stabile: 16,           // Buche d'impianto, pacciamatura, alberi
         idrico_ripariale: 18,        // Riconversione idraulico-forestale
-        bosco_naturale: 0,           // Elemento già consolidato
+        bosco_naturale: 0,           // Già boscato
         fabbricato: 0
       },
       umida: {
-        strada_asfalto: 110,         // Demolizione completa, scavo di sbancamento vasca, impermeabilizzazione argillosa, idrofile
+        strada_asfalto: 110,
         piazzale_impermeabile: 95,
-        vigneto_frutteto: 38,        // Movimento terra per invaso temporaneo
-        seminativo: 28,              // Modellazione morfologica e piantumazione elofite/macrofite
+        vigneto_frutteto: 38,
+        seminativo: 28,
         prato_stabile: 30,
-        idrico_ripariale: 12,        // Allargamento alveo/zona esondabile
+        idrico_ripariale: 12,
         bosco_naturale: 45,
         fabbricato: 0
       },
@@ -227,17 +235,17 @@
         fabbricato: 0
       },
       prato: {
-        strada_asfalto: 60,          // Rimozione asfalto + riporto terra + semina miscuglio polifita
+        strada_asfalto: 60,
         piazzale_impermeabile: 50,
         vigneto_frutteto: 15,
-        seminativo: 6,               // Idrosemina con miscugli autoctoni per impollinatori
-        prato_stabile: 3,            // Sovrasemina
+        seminativo: 6,
+        prato_stabile: 3,
         idrico_ripariale: 10,
         bosco_naturale: 20,
         fabbricato: 0
       },
       depav: {
-        strada_asfalto: 50,          // Fresatura e posa massello autobloccante filtrante/grigliato
+        strada_asfalto: 50,
         piazzale_impermeabile: 42,
         vigneto_frutteto: 0,
         seminativo: 0,
@@ -247,9 +255,9 @@
         fabbricato: 0
       },
       ciclabile: {
-        strada_asfalto: 25,          // Segnaletica, cordolatura e adeguamento corsia
+        strada_asfalto: 25,
         piazzale_impermeabile: 30,
-        vigneto_frutteto: 48,        // Tracciamento, massicciata stradale e fondo drenante ecologico
+        vigneto_frutteto: 48,
         seminativo: 42,
         prato_stabile: 40,
         idrico_ripariale: 55,
@@ -291,6 +299,7 @@
       maxZoom: 22
     });
 
+    // Disegno continuo con trascinamento del mouse
     map.on('mousedown', (e) => {
       if (e.originalEvent.button === 0) {
         const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill'] });
@@ -307,6 +316,7 @@
       map.dragPan.enable();
     });
 
+    // Geocoding Nominatim
     document.getElementById('address-search-btn').addEventListener('click', async () => {
       const q = document.getElementById('address-input').value.trim();
       if (!q) return;
@@ -319,9 +329,10 @@
       }
     });
 
+    // Fissaggio Ambito di Progetto
     document.getElementById('new-grid-btn').addEventListener('click', () => {
       isPinMode = true;
-      document.getElementById('cell-info').innerText = "Clicca per fissare il centro del comparto (100x100m, 10.000 celle 1x1m).";
+      document.getElementById('cell-info').innerText = "Clicca per posizionare il baricentro dell'ambito (100x100m, 10.000 celle 1x1m).";
       map.getCanvas().style.cursor = 'crosshair';
     });
 
@@ -333,13 +344,14 @@
       }
     });
 
+    // Tasto Destro: Ispezione Scheda Dettaglio Pre vs Post
     map.on('contextmenu', (e) => {
       e.preventDefault();
       const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill'] });
       if (feats.length > 0) openInspectModal(feats[0]);
     });
 
-    // Campionamento puntuale dell'uso del suolo reale
+    // Campionamento puntuale uso suolo OSM
     function detectLandUseClass(lon, lat) {
       const point = map.project([lon, lat]);
       const bbox = [[point.x - 2, point.y - 2], [point.x + 2, point.y + 2]];
@@ -600,6 +612,7 @@
       if (map.getSource('cells-source')) map.getSource('cells-source').setData(buildGeoJSON());
     };
 
+    // Toggle Satellite ESRI
     document.getElementById('toggle-basemap-btn').addEventListener('click', () => {
       isSatellite = !isSatellite;
       const btn = document.getElementById('toggle-basemap-btn');
@@ -623,6 +636,7 @@
       }
     });
 
+    // Esportazione GeoJSON per QGIS
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       const geo = buildGeoJSON();
       const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geo));
