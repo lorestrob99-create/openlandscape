@@ -2,14 +2,14 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - DSS Territoriale (200x200m)</title>
+  <title>OpenLandscape - Realtime Multiplayer Territorial DSS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <style>
     :root {
-      --bg-panel: rgba(13, 16, 23, 0.95);
+      --bg-panel: rgba(13, 16, 23, 0.96);
       --border-panel: rgba(255, 255, 255, 0.12);
       --accent: #52B788;
       --accent-dark: #2D6A4F;
@@ -17,7 +17,7 @@
     body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #07090e; color: #e6edf3; overflow: hidden; user-select: none; }
     #map { width: 100vw; height: 100vh; }
 
-    /* Header Bar Corretta: NON copre la barra laterale */
+    /* Header Bar */
     .header-bar {
       position: absolute; top: 10px; left: 10px; right: 10px; height: 44px;
       display: flex; justify-content: space-between; align-items: center;
@@ -28,10 +28,18 @@
     .title-group { display: flex; align-items: center; gap: 10px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
+    /* Badge Utente */
+    .user-pill {
+      background: #1e293b; border: 1px solid #3b82f6; color: #93c5fd;
+      padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 4px;
+    }
+    .user-pill:hover { background: #2563eb; color: #fff; }
+
     .search-box { display: flex; gap: 6px; }
     .search-input {
       background: #161b22; border: 1px solid #30363d; color: #fff; padding: 5px 8px;
-      border-radius: 6px; font-size: 11px; width: 170px; outline: none;
+      border-radius: 6px; font-size: 11px; width: 150px; outline: none;
     }
     .btn {
       background: var(--accent-dark); border: none; color: #fff; padding: 5px 10px;
@@ -47,7 +55,7 @@
     .budget-badge { background: #1f2d1f; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #40916c; color: #74c69d; }
     .temp-badge { background: #3d1a10; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #9e2a2b; color: #fec5bb; }
 
-    /* Toolbox Laterale Corretta: Inizia sotto l'header (top: 64px) */
+    /* Toolbox Laterale */
     .toolbox {
       position: absolute; top: 64px; left: 10px;
       background: var(--bg-panel); backdrop-filter: blur(14px);
@@ -100,7 +108,6 @@
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
-    /* Stampa PDF */
     @media print {
       body { background: #ffffff !important; color: #111111 !important; overflow: visible !important; }
       #map, .header-bar, .toolbox, #cell-info, .info-modal { display: none !important; }
@@ -125,6 +132,7 @@
   <div class="header-bar">
     <div class="title-group">
       <div class="title">OpenLandscape</div>
+      <div class="user-pill" id="user-display" title="Clicca per cambiare nome" onclick="changeUserName()">👤 Caricamento...</div>
       <span style="font-size:11px; color:#8892b0;" id="current-comparto-label">Nessun Comparto Attivo</span>
     </div>
 
@@ -215,6 +223,7 @@
       <h1 class="print-title">OpenLandscape // Scheda di Sintesi Esecutiva</h1>
       <div class="print-meta">
         <b>Data:</b> <span id="p-date"></span> | 
+        <b>Progettista:</b> <span id="p-user"></span> |
         <b>Comparto:</b> <span id="p-comparto"></span> | 
         <b>Dimensione:</b> 200 x 200 m (40.000 m² / 4 Ettari)
       </div>
@@ -252,7 +261,7 @@
     </table>
   </div>
 
-  <div id="cell-info">Clicca su uno dei Macro-Quadrati verdi (200x200m) per bloccarlo.</div>
+  <div id="cell-info">Esplora qualsiasi territorio. Clicca su un macro-comparto verde (200x200m) per iniziare.</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -265,26 +274,43 @@
     const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const START_BUDGET = 150000;
-    const SESSION_USER_ID = "USER_" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // Gestione Codice / Nome Utente
+    let currentUserName = localStorage.getItem('openlandscape_user_name') || ("Arch. #" + Math.random().toString(36).substring(2, 6).toUpperCase());
+    localStorage.setItem('openlandscape_user_name', currentUserName);
+
+    function updateHeaderUser() {
+      document.getElementById('user-display').innerText = `👤 ${currentUserName}`;
+    }
+    updateHeaderUser();
+
+    window.changeUserName = () => {
+      const nuovo = prompt("Inserisci il tuo nome o codice progettista:", currentUserName);
+      if (nuovo && nuovo.trim()) {
+        currentUserName = nuovo.trim();
+        localStorage.setItem('openlandscape_user_name', currentUserName);
+        updateHeaderUser();
+      }
+    };
 
     const LANDUSE_META = {
-      bosco_naturale: { name: 'Bosco Naturale Autoctono', baseScore: 12, cooling: 2.8, color: [45, 90, 39, 180] },
-      verde_pubblico: { name: 'Verde Pubblico / Parco', baseScore: 8, cooling: 2.0, color: [64, 145, 108, 180] },
-      verde_privato: { name: 'Verde Privato / Giardino', baseScore: 6, cooling: 1.5, color: [116, 198, 157, 180] },
-      ciclabile_esist: { name: 'Pista Ciclabile Esistente', baseScore: 4, cooling: 0.2, color: [231, 111, 81, 190] },
-      parcheggio: { name: 'Parcheggio / Piazzale', baseScore: 0, cooling: -1.5, color: [108, 117, 125, 190] },
-      strada_asfalto: { name: 'Sede Stradale Asfaltata', baseScore: 0, cooling: -2.0, color: [61, 64, 91, 190] },
-      seminativo: { name: 'Coltivo / Seminativo', baseScore: 2, cooling: 0.5, color: [156, 130, 74, 170] },
-      fabbricato: { name: 'Fabbricato Vincolato', baseScore: 0, cooling: -2.5, color: [164, 22, 26, 200] }
+      bosco_naturale: { name: 'Bosco Naturale Autoctono', baseScore: 12, cooling: 2.8, color: [45, 90, 39, 210] },
+      verde_pubblico: { name: 'Verde Pubblico / Parco', baseScore: 8, cooling: 2.0, color: [64, 145, 108, 200] },
+      verde_privato: { name: 'Verde Privato / Giardino', baseScore: 6, cooling: 1.5, color: [116, 198, 157, 200] },
+      ciclabile_esist: { name: 'Pista Ciclabile Esistente', baseScore: 4, cooling: 0.2, color: [231, 111, 81, 220] },
+      parcheggio: { name: 'Parcheggio / Piazzale', baseScore: 0, cooling: -1.5, color: [108, 117, 125, 210] },
+      strada_asfalto: { name: 'Sede Stradale Asfaltata', baseScore: 0, cooling: -2.0, color: [61, 64, 91, 210] },
+      seminativo: { name: 'Coltivo / Seminativo', baseScore: 2, cooling: 0.5, color: [156, 130, 74, 190] },
+      fabbricato: { name: 'Fabbricato Vincolato', baseScore: 0, cooling: -2.5, color: [164, 22, 26, 230] }
     };
 
     const PROJECT_COLORS = {
-      bosco: [45, 106, 79, 220],
-      umida: [42, 157, 143, 220],
-      ripariale: [64, 145, 108, 220],
-      prato: [181, 228, 140, 220],
-      depav: [82, 183, 136, 220],
-      ciclabile: [244, 162, 97, 220]
+      bosco: [45, 106, 79, 235],
+      umida: [42, 157, 143, 235],
+      ripariale: [64, 145, 108, 235],
+      prato: [181, 228, 140, 235],
+      depav: [82, 183, 136, 235],
+      ciclabile: [244, 162, 97, 235]
     };
 
     const COST_MATRIX = {
@@ -311,15 +337,14 @@
     let brushRadius = 1;
     let isMouseDown = false;
     let isSatellite = false;
-    let selectedCellCoord = null;
     let activeComparto = null;
     let macroCompartiList = [];
-    let dbOccupiedCodes = new Set();
+    let dbOccupiedMap = new Map(); // code -> claimed_by
+    let realtimeChannel = null;
 
-    // Griglia 200x200 memorizzata in Float32 / Int8 Array per prestazioni fulminee
-    const GRID_SIZE = 200; // 200x200 = 40.000 celle
-    let gridStatoFatto = new Uint8Array(GRID_SIZE * GRID_SIZE); // 0..7 tipi suolo
-    let gridStatoProg = new Uint8Array(GRID_SIZE * GRID_SIZE); // 0=reset, 1..6 interventi
+    const GRID_SIZE = 200;
+    let gridStatoFatto = new Uint8Array(GRID_SIZE * GRID_SIZE);
+    let gridStatoProg = new Uint8Array(GRID_SIZE * GRID_SIZE);
 
     const LANDUSE_KEYS = ['seminativo', 'strada_asfalto', 'parcheggio', 'fabbricato', 'bosco_naturale', 'verde_pubblico', 'verde_privato', 'ciclabile_esist'];
     const PROJ_KEYS = ['stato_di_fatto', 'bosco', 'umida', 'ripariale', 'prato', 'depav', 'ciclabile'];
@@ -327,7 +352,7 @@
     let canvasOverlay = document.createElement('canvas');
     canvasOverlay.width = GRID_SIZE;
     canvasOverlay.height = GRID_SIZE;
-    let ctxOverlay = canvasOverlay.getContext('2d');
+    let ctxOverlay = canvasOverlay.getContext('2d', { willReadFrequently: true });
 
     document.querySelectorAll('.brush-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -353,7 +378,6 @@
       maxZoom: 22
     });
 
-    // Griglia Macro-Comparti Dinamica Globale
     function updateGlobalMacroGrid() {
       if (activeComparto) return;
       const center = map.getCenter();
@@ -379,11 +403,13 @@
           const p3 = proj4("EPSG:32632", "EPSG:4326", [maxX, maxY]);
           const p4 = proj4("EPSG:32632", "EPSG:4326", [minX, maxY]);
 
-          const isOccupied = dbOccupiedCodes.has(code);
+          const isOccupied = dbOccupiedMap.has(code);
+          const claimer = dbOccupiedMap.get(code) || '';
 
           macroCompartiList.push({
             code: code,
             status: isOccupied ? 'OCCUPATO' : 'LIBERO',
+            claimed_by: claimer,
             minX: minX, minY: minY, maxX: maxX, maxY: maxY,
             center_lon: (p1[0] + p2[0]) / 2,
             center_lat: (p1[1] + p3[1]) / 2,
@@ -398,9 +424,12 @@
     }
 
     async function syncOccupiedFromDb() {
-      const { data } = await dbClient.from('comparti_territoriali').select('code, status');
+      const { data } = await dbClient.from('comparti_territoriali').select('code, status, claimed_by');
       if (data) {
-        dbOccupiedCodes = new Set(data.filter(d => d.status === 'OCCUPATO').map(d => d.code));
+        dbOccupiedMap.clear();
+        data.forEach(d => {
+          if (d.status === 'OCCUPATO') dbOccupiedMap.set(d.code, d.claimed_by || 'Utente');
+        });
       }
       updateGlobalMacroGrid();
     }
@@ -410,7 +439,7 @@
         type: "FeatureCollection",
         features: macroCompartiList.map(c => ({
           type: "Feature",
-          properties: { code: c.code, status: c.status },
+          properties: { code: c.code, status: c.status, claimed_by: c.claimed_by },
           geometry: c.bbox
         }))
       };
@@ -451,8 +480,13 @@
           type: 'symbol',
           source: 'macro-source',
           layout: {
-            'text-field': ['concat', 'Comparto 200x200m\n(', ['get', 'status'], ')'],
-            'text-size': 12,
+            'text-field': [
+              'case',
+              ['==', ['get', 'status'], 'OCCUPATO'],
+              ['concat', '🔒 OCCUPATO DA\n', ['get', 'claimed_by']],
+              ['concat', 'Comparto 200x200m\n[LIBERO]']
+            ],
+            'text-size': 11,
             'text-anchor': 'center'
           },
           paint: {
@@ -467,19 +501,21 @@
           const feature = e.features[0];
           const code = feature.properties.code;
           const status = feature.properties.status;
+          const claimer = feature.properties.claimed_by;
 
-          if (status === 'OCCUPATO') {
-            alert(`Questo comparto è già occupato da un altro utente! Scegline uno verde.`);
+          if (status === 'OCCUPATO' && claimer !== currentUserName) {
+            alert(`Questo comparto è già occupato da ${claimer}! Scegli un comparto verde libero.`);
             return;
           }
 
           const target = macroCompartiList.find(m => m.code === code);
           target.status = 'OCCUPATO';
+          target.claimed_by = currentUserName;
 
           await dbClient.from('comparti_territoriali').upsert({
             code: target.code,
             status: 'OCCUPATO',
-            claimed_by: SESSION_USER_ID,
+            claimed_by: currentUserName,
             center_lon: target.center_lon,
             center_lat: target.center_lat,
             bbox: target.bbox
@@ -492,14 +528,14 @@
           map.fitBounds([
             [target.bbox.coordinates[0][0][0], target.bbox.coordinates[0][0][1]],
             [target.bbox.coordinates[0][2][0], target.bbox.coordinates[0][2][1]]
-          ], { padding: 50, duration: 800 });
+          ], { padding: 40, duration: 600 });
 
           map.setLayoutProperty('macro-fill', 'visibility', 'none');
           map.setLayoutProperty('macro-line', 'visibility', 'none');
           map.setLayoutProperty('macro-labels', 'visibility', 'none');
 
-          // Campiona e avvia il comparto in modalità Canvas ultra-rapida
           initCanvasGridForComparto(target);
+          setupRealtimeForComparto(target.code);
         });
 
       } else {
@@ -517,7 +553,7 @@
       if (data && data.length > 0) {
         map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 15.5 });
         document.getElementById('cell-info').innerText = `Inquadrata: ${data[0].display_name}`;
-        setTimeout(updateGlobalMacroGrid, 1000);
+        setTimeout(updateGlobalMacroGrid, 800);
       }
     });
 
@@ -525,91 +561,92 @@
       if (!activeComparto) updateGlobalMacroGrid();
     });
 
-    // CAMPIONAMENTO REALE ACCURATO & AVVIO CANVAS ULTRA-FLUIDO
+    // CAMPIONAMENTO ULTRA-VELOCE
     function initCanvasGridForComparto(comparto) {
-      document.getElementById('cell-info').innerText = "Campionamento uso reale del suolo in corso...";
+      document.getElementById('cell-info').innerText = "Campionamento uso reale del suolo...";
 
-      gridStatoFatto.fill(0); // default seminativo
-      gridStatoProg.fill(0); // default stato di fatto
+      gridStatoFatto.fill(0);
+      gridStatoProg.fill(0);
 
-      // Campioniamo i poligoni OSM reali presenti sul comparto
       const c1 = comparto.bbox.coordinates[0][0];
       const c2 = comparto.bbox.coordinates[0][2];
       const p1 = map.project(c1);
       const p2 = map.project(c2);
       const bbox = [[Math.min(p1.x, p2.x), Math.min(p1.y, p2.y)], [Math.max(p1.x, p2.x), Math.max(p1.y, p2.y)]];
 
-      const under = map.queryRenderedFeatures(bbox).filter(f => !f.layer.id.startsWith('macro-'));
-
-      // Scansiona a intervalli di 1 metro
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
+      // Scansione a passo di 2 metri per velocizzare il primo boot del 400%
+      for (let r = 0; r < GRID_SIZE; r += 2) {
+        for (let c = 0; c < GRID_SIZE; c += 2) {
           const x = comparto.minX + c + 0.5;
           const y = comparto.minY + r + 0.5;
           const wgs = proj4("EPSG:32632", "EPSG:4326", [x, y]);
           const pt = map.project(wgs);
 
           const featsAtPoint = map.queryRenderedFeatures([pt.x, pt.y]).filter(f => !f.layer.id.startsWith('macro-'));
-          let landTypeIdx = 0; // seminativo
+          let landTypeIdx = 0;
 
           for (const f of featsAtPoint) {
             const lid = (f.layer.id || '').toLowerCase();
             const src = (f.sourceLayer || '').toLowerCase();
             const cls = (f.properties?.class || f.properties?.type || f.properties?.highway || '').toLowerCase();
 
-            if (lid.includes('building') || src.includes('building')) { landTypeIdx = 3; break; } // fabbricato
-            if (cls === 'cycleway' || cls === 'path' || cls === 'footway') { landTypeIdx = 7; break; } // ciclabile
-            if (cls === 'parking' || lid.includes('parking')) { landTypeIdx = 2; break; } // parcheggio
-            if (cls.includes('forest') || cls.includes('wood')) { landTypeIdx = 4; break; } // bosco
-            if (cls.includes('park')) { landTypeIdx = 5; break; } // verde pubblico
-            if (cls.includes('garden') || cls.includes('residential')) { landTypeIdx = 6; break; } // verde privato
-            if (lid.includes('road') || cls.includes('motorway') || cls.includes('primary') || cls.includes('secondary')) { landTypeIdx = 1; break; } // strada
+            if (lid.includes('building') || src.includes('building')) { landTypeIdx = 3; break; }
+            if (cls === 'cycleway' || cls === 'path' || cls === 'footway') { landTypeIdx = 7; break; }
+            if (cls === 'parking' || lid.includes('parking')) { landTypeIdx = 2; break; }
+            if (cls.includes('forest') || cls.includes('wood')) { landTypeIdx = 4; break; }
+            if (cls.includes('park')) { landTypeIdx = 5; break; }
+            if (cls.includes('garden') || cls.includes('residential')) { landTypeIdx = 6; break; }
+            if (lid.includes('road') || cls.includes('motorway') || cls.includes('primary')) { landTypeIdx = 1; break; }
           }
 
-          gridStatoFatto[r * GRID_SIZE + c] = landTypeIdx;
+          // Riempie il blocco 2x2
+          const idx = r * GRID_SIZE + c;
+          gridStatoFatto[idx] = landTypeIdx;
+          gridStatoFatto[idx + 1] = landTypeIdx;
+          gridStatoFatto[idx + GRID_SIZE] = landTypeIdx;
+          gridStatoFatto[idx + GRID_SIZE + 1] = landTypeIdx;
         }
       }
 
-      // Disegna il Canvas Overlay e collegalo a MapLibre come ImageSource
       refreshCanvasImage();
 
       const coordsCorners = [
-        proj4("EPSG:32632", "EPSG:4326", [comparto.minX, comparto.maxY]), // Top-Left
-        proj4("EPSG:32632", "EPSG:4326", [comparto.maxX, comparto.maxY]), // Top-Right
-        proj4("EPSG:32632", "EPSG:4326", [comparto.maxX, comparto.minY]), // Bottom-Right
-        proj4("EPSG:32632", "EPSG:4326", [comparto.minX, comparto.minY])  // Bottom-Left
+        proj4("EPSG:32632", "EPSG:4326", [comparto.minX, comparto.maxY]),
+        proj4("EPSG:32632", "EPSG:4326", [comparto.maxX, comparto.maxY]),
+        proj4("EPSG:32632", "EPSG:4326", [comparto.maxX, comparto.minY]),
+        proj4("EPSG:32632", "EPSG:4326", [comparto.minX, comparto.minY])
       ];
 
-      if (!map.getSource('grid-image-source')) {
-        map.addSource('grid-image-source', {
-          type: 'image',
-          url: canvasOverlay.toDataURL(),
+      if (!map.getSource('grid-canvas-source')) {
+        map.addSource('grid-canvas-source', {
+          type: 'canvas',
+          canvas: canvasOverlay,
+          animate: true,
           coordinates: coordsCorners
         });
 
         map.addLayer({
-          id: 'grid-image-layer',
+          id: 'grid-canvas-layer',
           type: 'raster',
-          source: 'grid-image-source',
-          paint: { 'raster-opacity': 0.85, 'raster-resampling': 'nearest' }
+          source: 'grid-canvas-source',
+          paint: { 'raster-opacity': 0.88, 'raster-resampling': 'nearest' }
         });
       } else {
-        map.getSource('grid-image-source').setCoordinates(coordsCorners);
-        map.getSource('grid-image-source').updateImage({ url: canvasOverlay.toDataURL() });
-        map.setLayoutProperty('grid-image-layer', 'visibility', 'visible');
+        map.getSource('grid-canvas-source').setCoordinates(coordsCorners);
+        map.setLayoutProperty('grid-canvas-layer', 'visibility', 'visible');
       }
 
       updateMetrics();
-      document.getElementById('cell-info').innerText = "Comparto 200x200m attivo. Trascina per dipingere o usa 'Selezione Neutra'.";
+      document.getElementById('cell-info').innerText = "Comparto pronto. Disegno sincronizzato in tempo reale con gli altri utenti.";
     }
 
+    // Disegno Canvas ultra-performante nativo ImageData
     function refreshCanvasImage() {
       const imgData = ctxOverlay.createImageData(GRID_SIZE, GRID_SIZE);
       const data = imgData.data;
 
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
-          // Inverti asse Y per le coordinate immagine
           const yImg = (GRID_SIZE - 1 - r);
           const iCanvas = (yImg * GRID_SIZE + c) * 4;
           const iGrid = r * GRID_SIZE + c;
@@ -636,7 +673,6 @@
       ctxOverlay.putImageData(imgData, 0, 0);
     }
 
-    // Interazione con la Griglia (Mouse / Touch)
     function getGridCoordFromLngLat(lng, lat) {
       if (!activeComparto) return null;
       const utm = proj4("EPSG:4326", "EPSG:32632", [lng, lat]);
@@ -648,6 +684,23 @@
       return null;
     }
 
+    // REALTIME SUPABASE BIDIREZIONALE (WEBSOCKET LIVE)
+    function setupRealtimeForComparto(code) {
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+
+      realtimeChannel = dbClient.channel(`room_${code}`, {
+        config: { broadcast: { self: false } }
+      });
+
+      realtimeChannel
+        .on('broadcast', { event: 'paint_action' }, (payload) => {
+          const { r, c, rad, tool, user } = payload.payload;
+          document.getElementById('cell-info').innerText = `✏️ ${user} sta modificando la mappa in diretta...`;
+          executePaint(r, c, rad, tool, false); // false = non reinviare a broadcast
+        })
+        .subscribe();
+    }
+
     map.on('mousedown', (e) => {
       if (e.originalEvent.button === 0 && activeComparto) {
         const coord = getGridCoordFromLngLat(e.lngLat.lng, e.lngLat.lat);
@@ -657,7 +710,7 @@
           if (activeTool === 'inspect_only') {
             openInspectModalAtCoord(coord.r, coord.c);
           } else {
-            applyBrushActionCanvas(coord.r, coord.c);
+            executePaint(coord.r, coord.c, brushRadius, activeTool, true);
           }
         }
       }
@@ -671,10 +724,10 @@
         const sf = LANDUSE_KEYS[gridStatoFatto[idx]];
         const sp = PROJ_KEYS[gridStatoProg[idx]];
         const meta = LANDUSE_META[sf] || { name: sf };
-        document.getElementById('cell-info').innerHTML = `🔍 <b>Cella [${coord.c}, ${coord.r}]</b> | Stato di Fatto: <b>${meta.name}</b> | Progetto: <b>${sp}</b>`;
+        document.getElementById('cell-info').innerHTML = `🔍 <b>Cella [${coord.c}, ${coord.r}]</b> | Stato: <b>${meta.name}</b> | Progetto: <b>${sp}</b>`;
 
         if (isMouseDown && activeTool !== 'inspect_only') {
-          applyBrushActionCanvas(coord.r, coord.c);
+          executePaint(coord.r, coord.c, brushRadius, activeTool, true);
         }
       }
     });
@@ -684,37 +737,51 @@
       map.dragPan.enable();
     });
 
-    map.on('contextmenu', (e) => {
-      e.preventDefault();
-      if (!activeComparto) return;
-      const coord = getGridCoordFromLngLat(e.lngLat.lng, e.lngLat.lat);
-      if (coord) openInspectModalAtCoord(coord.r, coord.c);
-    });
+    // Funzione Esecuzione Pennello Ottimizzata con invio Broadcast Live
+    let paintPending = false;
 
-    function applyBrushActionCanvas(centerR, centerC) {
-      const offset = Math.floor(brushRadius / 2);
-      const toolIdx = PROJ_KEYS.indexOf(activeTool);
+    function executePaint(centerR, centerC, rad, tool, broadcastIt) {
+      const offset = Math.floor(rad / 2);
+      const toolIdx = PROJ_KEYS.indexOf(tool);
       let modified = false;
 
       for (let r = centerR - offset; r <= centerR + offset; r++) {
         for (let c = centerC - offset; c <= centerC + offset; c++) {
           if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
             const idx = r * GRID_SIZE + c;
-            // Non sovrascrivere fabbricati vincolati
-            if (gridStatoFatto[idx] === 3 && activeTool !== 'reset') continue;
-
-            gridStatoProg[idx] = activeTool === 'reset' ? 0 : toolIdx;
+            if (gridStatoFatto[idx] === 3 && tool !== 'reset') continue; // Fabbricato protetto
+            gridStatoProg[idx] = tool === 'reset' ? 0 : toolIdx;
             modified = true;
           }
         }
       }
 
       if (modified) {
-        refreshCanvasImage();
-        map.getSource('grid-image-source').updateImage({ url: canvasOverlay.toDataURL() });
-        updateMetrics();
+        if (!paintPending) {
+          paintPending = true;
+          requestAnimationFrame(() => {
+            refreshCanvasImage();
+            updateMetrics();
+            paintPending = false;
+          });
+        }
+
+        if (broadcastIt && realtimeChannel) {
+          realtimeChannel.send({
+            type: 'broadcast',
+            event: 'paint_action',
+            payload: { r: centerR, c: centerC, rad: rad, tool: tool, user: currentUserName }
+          });
+        }
       }
     }
+
+    map.on('contextmenu', (e) => {
+      e.preventDefault();
+      if (!activeComparto) return;
+      const coord = getGridCoordFromLngLat(e.lngLat.lng, e.lngLat.lat);
+      if (coord) openInspectModalAtCoord(coord.r, coord.c);
+    });
 
     function openInspectModalAtCoord(r, c) {
       const idx = r * GRID_SIZE + c;
@@ -772,14 +839,14 @@
       if (!activeComparto) return;
       if (!confirm(`Rilasciare il comparto ${activeComparto.code}?`)) return;
 
-      await dbClient.from('comparti_territoriali').update({ status: 'LIBERO' }).eq('code', activeComparto.code);
-      dbOccupiedCodes.delete(activeComparto.code);
+      await dbClient.from('comparti_territoriali').update({ status: 'LIBERO', claimed_by: null }).eq('code', activeComparto.code);
+      dbOccupiedMap.delete(activeComparto.code);
       activeComparto = null;
 
       document.getElementById('current-comparto-label').innerText = "Nessun Comparto Attivo";
       document.getElementById('release-grid-btn').style.display = 'none';
 
-      if (map.getLayer('grid-image-layer')) map.setLayoutProperty('grid-image-layer', 'visibility', 'none');
+      if (map.getLayer('grid-canvas-layer')) map.setLayoutProperty('grid-canvas-layer', 'visibility', 'none');
       map.setLayoutProperty('macro-fill', 'visibility', 'visible');
       map.setLayoutProperty('macro-line', 'visibility', 'visible');
       map.setLayoutProperty('macro-labels', 'visibility', 'visible');
@@ -790,6 +857,7 @@
     window.generatePdfReport = () => {
       if (!activeComparto) { alert("Seleziona prima un comparto!"); return; }
       document.getElementById('p-date').innerText = new Date().toLocaleDateString('it-IT');
+      document.getElementById('p-user').innerText = currentUserName;
       document.getElementById('p-comparto').innerText = activeComparto.code;
       document.getElementById('p-cost').innerText = document.getElementById('total-cost').innerText.replace('Spesa: ', '');
       document.getElementById('p-budget').innerText = document.getElementById('budget-left-score').innerText.replace('Residuo: ', '');
@@ -822,7 +890,7 @@
           });
         }
         if (!map.getLayer('sat-layer')) {
-          map.addLayer({ id: 'sat-layer', type: 'raster', source: 'esri-sat', minzoom: 0, maxzoom: 22 }, 'grid-image-layer');
+          map.addLayer({ id: 'sat-layer', type: 'raster', source: 'esri-sat', minzoom: 0, maxzoom: 22 }, 'grid-canvas-layer');
         } else {
           map.setLayoutProperty('sat-layer', 'visibility', 'visible');
         }
@@ -835,7 +903,7 @@
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       if (!activeComparto) { alert("Seleziona prima un comparto!"); return; }
       const feats = [];
-      for (let r = 0; r < GRID_SIZE; r += 2) { // export a passo 2m per file leggero
+      for (let r = 0; r < GRID_SIZE; r += 2) {
         for (let c = 0; c < GRID_SIZE; c += 2) {
           const idx = r * GRID_SIZE + c;
           if (gridStatoProg[idx] !== 0) {
@@ -862,8 +930,19 @@
       a.remove();
     });
 
+    // Realtime Supabase su occupazione comparti
+    function setupGlobalRealtime() {
+      dbClient
+        .channel('global-comparti')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comparti_territoriali' }, () => {
+          syncOccupiedFromDb();
+        })
+        .subscribe();
+    }
+
     map.on('load', () => {
       syncOccupiedFromDb();
+      setupGlobalRealtime();
     });
   </script>
 </body>
