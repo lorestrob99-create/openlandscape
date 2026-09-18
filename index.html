@@ -28,7 +28,7 @@
     .title-group { display: flex; align-items: center; gap: 10px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
-    /* Badge Utente */
+    /* Badge Progettista */
     .user-pill {
       background: #1e293b; border: 1px solid #3b82f6; color: #93c5fd;
       padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
@@ -108,6 +108,7 @@
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
+    /* Stile Scheda A4 per Stampa PDF */
     @media print {
       body { background: #ffffff !important; color: #111111 !important; overflow: visible !important; }
       #map, .header-bar, .toolbox, #cell-info, .info-modal { display: none !important; }
@@ -217,7 +218,7 @@
     <div class="info-row"><span>De-pavimentazione suolo impermeabile:</span><b>45.00 €/m²</b></div>
   </div>
 
-  <!-- SCHEDA STAMPABILE PDF -->
+  <!-- Scheda Stampabile PDF -->
   <div id="print-sheet">
     <div class="print-header">
       <h1 class="print-title">OpenLandscape // Scheda di Sintesi Esecutiva</h1>
@@ -339,7 +340,7 @@
     let isSatellite = false;
     let activeComparto = null;
     let macroCompartiList = [];
-    let dbOccupiedMap = new Map(); // code -> claimed_by
+    let dbOccupiedMap = new Map();
     let realtimeChannel = null;
 
     const GRID_SIZE = 200;
@@ -561,7 +562,7 @@
       if (!activeComparto) updateGlobalMacroGrid();
     });
 
-    // CAMPIONAMENTO ULTRA-VELOCE
+    // Campionamento Rapido con passo a 2m per avvio fulmineo
     function initCanvasGridForComparto(comparto) {
       document.getElementById('cell-info').innerText = "Campionamento uso reale del suolo...";
 
@@ -574,7 +575,6 @@
       const p2 = map.project(c2);
       const bbox = [[Math.min(p1.x, p2.x), Math.min(p1.y, p2.y)], [Math.max(p1.x, p2.x), Math.max(p1.y, p2.y)]];
 
-      // Scansione a passo di 2 metri per velocizzare il primo boot del 400%
       for (let r = 0; r < GRID_SIZE; r += 2) {
         for (let c = 0; c < GRID_SIZE; c += 2) {
           const x = comparto.minX + c + 0.5;
@@ -599,7 +599,6 @@
             if (lid.includes('road') || cls.includes('motorway') || cls.includes('primary')) { landTypeIdx = 1; break; }
           }
 
-          // Riempie il blocco 2x2
           const idx = r * GRID_SIZE + c;
           gridStatoFatto[idx] = landTypeIdx;
           gridStatoFatto[idx + 1] = landTypeIdx;
@@ -640,7 +639,6 @@
       document.getElementById('cell-info').innerText = "Comparto pronto. Disegno sincronizzato in tempo reale con gli altri utenti.";
     }
 
-    // Disegno Canvas ultra-performante nativo ImageData
     function refreshCanvasImage() {
       const imgData = ctxOverlay.createImageData(GRID_SIZE, GRID_SIZE);
       const data = imgData.data;
@@ -684,9 +682,9 @@
       return null;
     }
 
-    // REALTIME SUPABASE BIDIREZIONALE (WEBSOCKET LIVE)
+    // Realtime Supabase Broadcast
     function setupRealtimeForComparto(code) {
-      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      if (realtimeChannel) dbClient.removeChannel(realtimeChannel);
 
       realtimeChannel = dbClient.channel(`room_${code}`, {
         config: { broadcast: { self: false } }
@@ -696,7 +694,7 @@
         .on('broadcast', { event: 'paint_action' }, (payload) => {
           const { r, c, rad, tool, user } = payload.payload;
           document.getElementById('cell-info').innerText = `✏️ ${user} sta modificando la mappa in diretta...`;
-          executePaint(r, c, rad, tool, false); // false = non reinviare a broadcast
+          executePaint(r, c, rad, tool, false);
         })
         .subscribe();
     }
@@ -737,7 +735,6 @@
       map.dragPan.enable();
     });
 
-    // Funzione Esecuzione Pennello Ottimizzata con invio Broadcast Live
     let paintPending = false;
 
     function executePaint(centerR, centerC, rad, tool, broadcastIt) {
@@ -749,7 +746,7 @@
         for (let c = centerC - offset; c <= centerC + offset; c++) {
           if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
             const idx = r * GRID_SIZE + c;
-            if (gridStatoFatto[idx] === 3 && tool !== 'reset') continue; // Fabbricato protetto
+            if (gridStatoFatto[idx] === 3 && tool !== 'reset') continue;
             gridStatoProg[idx] = tool === 'reset' ? 0 : toolIdx;
             modified = true;
           }
@@ -930,7 +927,6 @@
       a.remove();
     });
 
-    // Realtime Supabase su occupazione comparti
     function setupGlobalRealtime() {
       dbClient
         .channel('global-comparti')
