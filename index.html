@@ -2,104 +2,111 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - Piattaforma Territoriale & NBS</title>
+  <title>OpenLandscape - DSS 3D Esecutivo (1x1m)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <style>
     :root {
-      --bg-panel: rgba(18, 18, 18, 0.94);
+      --bg-panel: rgba(15, 17, 21, 0.95);
       --border-panel: rgba(255, 255, 255, 0.12);
       --accent: #52B788;
       --accent-dark: #2D6A4F;
     }
-    body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0a0a; color: #eee; overflow: hidden; user-select: none; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0c10; color: #eee; overflow: hidden; user-select: none; }
     #map { width: 100vw; height: 100vh; }
-    
+
     /* Header Bar */
     .header-bar {
       position: absolute; top: 10px; left: 10px; right: 10px;
       display: flex; justify-content: space-between; align-items: center;
-      background: var(--bg-panel); backdrop-filter: blur(10px);
+      background: var(--bg-panel); backdrop-filter: blur(12px);
       padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 30; gap: 8px; flex-wrap: wrap;
+      z-index: 30; gap: 8px; flex-wrap: wrap; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
     }
-    .title-group { display: flex; align-items: center; gap: 10px; }
+    .title-group { display: flex; align-items: center; gap: 8px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
     .search-box { display: flex; gap: 6px; }
     .search-input {
-      background: #1f1f1f; border: 1px solid #444; color: #fff; padding: 6px 10px;
-      border-radius: 6px; font-size: 12px; width: 180px; outline: none;
+      background: #1c1e24; border: 1px solid #3d4251; color: #fff; padding: 6px 10px;
+      border-radius: 6px; font-size: 12px; width: 170px; outline: none;
     }
     .btn {
       background: var(--accent-dark); border: none; color: #fff; padding: 6px 10px;
       border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s;
     }
-    .btn:hover { filter: brightness(1.15); }
-    .btn-secondary { background: #2f3542; border: 1px solid #57606f; }
+    .btn:hover { filter: brightness(1.2); }
+    .btn-secondary { background: #2b303c; border: 1px solid #454d60; }
+    .btn-active { background: #2563eb !important; border-color: #60a5fa !important; }
 
     .metrics-container { display: flex; gap: 6px; align-items: center; }
     .metric-badge { background: #132a13; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #31572c; color: #ecf39e; }
     .cost-badge { background: #1a2238; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #3d5a80; color: #98c1d9; }
-    .temp-badge { background: #3d1308; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #9e2a2b; color: #fec5bb; }
+    .corridor-badge { background: #2d1810; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #d97706; color: #fde68a; }
 
     /* Toolbox */
     .toolbox {
       position: absolute; top: 68px; left: 10px;
-      background: var(--bg-panel); backdrop-filter: blur(10px);
+      background: var(--bg-panel); backdrop-filter: blur(12px);
       padding: 12px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 215px;
-      max-height: calc(100vh - 140px); overflow-y: auto;
+      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 220px;
+      max-height: calc(100vh - 140px); overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
     }
-    .toolbox label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.8px; margin-top: 4px; }
+    .toolbox label { font-size: 10px; text-transform: uppercase; color: #8892b0; letter-spacing: 0.8px; margin-top: 4px; }
     .tool-btn {
-      background: #1c1c1c; border: 1px solid #3a3a3a; color: #eee; padding: 7px 9px;
+      background: #181a20; border: 1px solid #313644; color: #eee; padding: 7px 9px;
       border-radius: 6px; text-align: left; cursor: pointer; font-size: 11px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;
     }
-    .tool-btn:hover { background: #2a2a2a; }
+    .tool-btn:hover { background: #232732; }
     .tool-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
+
+    /* Legenda Stato di Fatto */
+    .legend-box {
+      margin-top: 4px; background: rgba(0,0,0,0.35); padding: 8px; border-radius: 6px; border: 1px solid #2d313d;
+      font-size: 10px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .legend-row { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
     /* Target di Piano */
     .target-box {
-      margin-top: 4px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px; border: 1px solid #333;
+      margin-top: 4px; background: rgba(0,0,0,0.35); padding: 6px; border-radius: 6px; border: 1px solid #2d313d;
     }
     .target-title { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
-    .target-bar-bg { background: #262626; height: 5px; border-radius: 3px; overflow: hidden; }
+    .target-bar-bg { background: #21242c; height: 5px; border-radius: 3px; overflow: hidden; }
     .target-bar-fill { background: #52B788; height: 100%; width: 0%; transition: width 0.3s; }
 
-    /* Scheda Ispezione Cella (Tasto Destro) */
+    /* Scheda Ispezione Pre vs Post (Tasto Destro) */
     .inspect-modal {
-      position: absolute; top: 68px; right: 10px; width: 250px;
-      background: var(--bg-panel); backdrop-filter: blur(10px);
+      position: absolute; top: 68px; right: 10px; width: 260px;
+      background: var(--bg-panel); backdrop-filter: blur(12px);
       padding: 14px; border-radius: 8px; border: 1px solid var(--accent);
-      z-index: 35; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+      z-index: 35; display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.8);
     }
     .inspect-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .inspect-title { font-size: 12px; font-weight: 700; color: var(--accent); }
     .inspect-close { cursor: pointer; color: #888; font-size: 14px; }
-    .inspect-row { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
-    .inspect-row span:first-child { color: #999; }
+    .inspect-row { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 3px; }
+    .inspect-row span:first-child { color: #8892b0; }
 
-    /* Barra Info Hover */
     #cell-info {
       position: absolute; bottom: 14px; left: 10px;
       background: var(--bg-panel); padding: 8px 12px; border-radius: 6px;
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
-    /* Modalità Mobile: Bottom Sheet */
     @media (max-width: 768px) {
-      .header-bar { top: 0; left: 0; right: 0; border-radius: 0; border: none; border-bottom: 1px solid var(--border-panel); }
+      .header-bar { top: 0; left: 0; right: 0; border-radius: 0; }
       .search-box { width: 100%; }
       .search-input { flex: 1; }
       .toolbox {
         top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 45vh;
-        border-radius: 16px 16px 0 0; border: 1px solid var(--border-panel); box-sizing: border-box;
+        border-radius: 16px 16px 0 0; box-sizing: border-box;
       }
-      .inspect-modal { right: 10px; left: 10px; width: auto; top: 120px; }
+      .inspect-modal { right: 10px; left: 10px; width: auto; top: 110px; }
       #cell-info { display: none; }
     }
   </style>
@@ -109,7 +116,7 @@
   <!-- Header -->
   <div class="header-bar">
     <div class="title-group">
-      <div class="title">OpenLandscape</div>
+      <div class="title">OpenLandscape 3D</div>
       <div class="search-box">
         <input type="text" id="address-input" class="search-input" placeholder="Comune, via o indirizzo..." />
         <button class="btn" id="address-search-btn">Vai</button>
@@ -117,65 +124,63 @@
     </div>
 
     <div class="metrics-container">
-      <div class="temp-badge" id="temp-score">ΔT: 0.0 °C</div>
-      <div class="cost-badge" id="total-cost">0 €</div>
-      <div class="metric-badge" id="corridor-score">Corridoi: 0</div>
+      <div class="corridor-badge" id="corridor-score">Corridoi (con esist.): 0</div>
+      <div class="cost-badge" id="total-cost">Costo: 0 €</div>
       <div class="metric-badge" id="total-score">Bio: 0 PT</div>
-      <button class="btn btn-secondary" id="new-grid-btn">📍 Genera Ambito</button>
+      <button class="btn btn-secondary" id="toggle-3d-btn">🏢 Vista 3D</button>
+      <button class="btn btn-secondary" id="new-grid-btn">📍 Ambito 100x100m</button>
       <button class="btn btn-secondary" id="toggle-basemap-btn">🛰️ Satellite</button>
-      <label class="btn btn-secondary" style="margin:0; cursor:pointer;">
-        🛡️ Vincolo GeoJSON <input type="file" id="vincolo-file-input" accept=".geojson,.json" style="display:none;">
-      </label>
     </div>
   </div>
 
   <!-- Toolbox Laterale -->
   <div class="toolbox">
-    <div style="font-size: 10px; color: #bbb; display: flex; justify-content: space-between;">
-      <span>Modalità: <b>Trascina mouse</b></span>
-      <span style="color:#52B788;">Dx = Info</span>
+    <div style="font-size: 10px; color: #aaa; display: flex; justify-content: space-between;">
+      <span>Scala: <b>1x1m (1 m²)</b></span>
+      <span style="color:#52B788;">Dx = Ispezione</span>
     </div>
 
-    <label>Interventi NBS</label>
+    <label>Interventi di Progetto</label>
     <button class="tool-btn active" data-action="bosco">🌲 Bosco <span>+10</span></button>
     <button class="tool-btn" data-action="umida">💧 Zona Umida <span>+15</span></button>
     <button class="tool-btn" data-action="ripariale">🌿 Fascia Riparia <span>+12</span></button>
     <button class="tool-btn" data-action="prato">🌸 Prato Fiorito <span>+8</span></button>
     <button class="tool-btn" data-action="depav">🧱 De-pavimentazione <span>+20</span></button>
-    
-    <label>Infrastrutture & Selezione</label>
     <button class="tool-btn" data-action="ciclabile">🚲 Ciclabile <span>+5</span></button>
-    <button class="tool-btn" data-action="select_only">🔍 Seleziona / Info</button>
-    <button class="tool-btn" data-action="reset">🔄 Ripristina</button>
+    <button class="tool-btn" data-action="reset">🔄 Ripristina Stato Fatto</button>
 
-    <label>Target di Piano</label>
+    <label>Legenda Stato di Fatto</label>
+    <div class="legend-box">
+      <div class="legend-row"><div class="legend-color" style="background:#556b2f;"></div><span>Bosco Naturale Esistente</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#8f7d4e;"></div><span>Agricolo / Seminativo</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#4a6b57;"></div><span>Prato / Pascolo</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#444a57;"></div><span>Asfalto / Stradale</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#c0392b;"></div><span>Fabbricato Vincolato</span></div>
+    </div>
+
+    <label>Target di Piano (1 Ettaro)</label>
     <div class="target-box">
-      <div class="target-title"><span>Target Forestale (30%)</span><span id="target-forest-val">0%</span></div>
+      <div class="target-title"><span>Foresta Totale (30% = 3.000 m²)</span><span id="target-forest-val">0%</span></div>
       <div class="target-bar-bg"><div class="target-bar-fill" id="target-forest-bar"></div></div>
     </div>
-    <div class="target-box">
-      <div class="target-title"><span>Budget Max (150.000 €)</span><span id="target-budget-val">0%</span></div>
-      <div class="target-bar-bg"><div class="target-bar-fill" id="target-budget-bar" style="background:#3a86ff;"></div></div>
-    </div>
 
-    <button class="btn" id="export-geojson-btn" style="margin-top: 8px; width: 100%;">📥 Salva per QGIS</button>
+    <button class="btn" id="export-geojson-btn" style="margin-top: 6px; width: 100%;">📥 Salva per QGIS</button>
   </div>
 
-  <!-- Ispezione Pre/Post (Tasto Destro) -->
+  <!-- Scheda Ispezione Cella (Tasto Destro) -->
   <div class="inspect-modal" id="inspect-modal">
     <div class="inspect-header">
-      <span class="inspect-title" id="inspect-cell-id">Cella #---</span>
+      <span class="inspect-title" id="inspect-cell-id">Cella #--- (1x1m)</span>
       <span class="inspect-close" onclick="closeInspectModal()">✕</span>
     </div>
-    <div class="inspect-row"><span>Coordinate UTM:</span><span id="inspect-coords">-</span></div>
-    <div class="inspect-row"><span>Uso del Suolo Originario:</span><b id="inspect-landuse-pre">-</b></div>
-    <div class="inspect-row"><span>Stato di Progetto:</span><b id="inspect-landuse-post" style="color:var(--accent);">-</b></div>
-    <div class="inspect-row"><span>Bio-Punti generati:</span><span id="inspect-points">-</span></div>
-    <div class="inspect-row"><span>Costo Intervento stim.:</span><span id="inspect-cost">-</span></div>
-    <div class="inspect-row"><span>Stato Vincolo:</span><span id="inspect-constraint">Nessun vincolo</span></div>
+    <div class="inspect-row"><span>Stato di Fatto:</span><b id="inspect-pre">-</b></div>
+    <div class="inspect-row"><span>Stato di Progetto:</span><b id="inspect-post" style="color:var(--accent);">-</b></div>
+    <div class="inspect-row"><span>Costo Differenziale:</span><b id="inspect-cost" style="color:#98c1d9;">-</b></div>
+    <div class="inspect-row"><span>Delta Biodiversità:</span><span id="inspect-points">-</span></div>
+    <div class="inspect-row"><span>Connessione Corridoio:</span><span id="inspect-corridor">-</span></div>
   </div>
 
-  <div id="cell-info">Passa con il cursore per ispezionare il suolo o trascina per applicare l'azione selezionata.</div>
+  <div id="cell-info">Genera l'ambito da 100x100m per iniziare la progettazione esecutiva ad alta risoluzione.</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -183,18 +188,61 @@
   <script>
     proj4.defs("EPSG:32632", "+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs");
 
-    const SUPABASE_URL = "https://cpcocfjzbgiunhvphwwo.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_ATgwPpdPd-OGDmRCo4Gpng_3P5u-j5H";
-    const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Matrice Costi Differenziali (€/m²) in base allo Stato di Fatto iniziale
+    // Se c'è asfalto/strada bisogna de-pavimentare, fresare, bonificare e riportare terra fertile!
+    const COST_MATRIX = {
+      bosco: {
+        strada: 75,       // Demolizione asfalto + scavo + terra fertile + piantumazione albero
+        agricolo: 14,     // Solo fornitura e posa essenze forestali
+        prato: 16,        // Preparazione suolo + piantumazione
+        bosco_esist: 0,   // Già bosco esistente
+        fabbricato: 0     // Bloccato
+      },
+      umida: {
+        strada: 90,
+        agricolo: 28,
+        prato: 30,
+        bosco_esist: 40,
+        fabbricato: 0
+      },
+      ripariale: {
+        strada: 70,
+        agricolo: 18,
+        prato: 18,
+        bosco_esist: 5,
+        fabbricato: 0
+      },
+      prato: {
+        strada: 55,       // Rimozione asfalto + semina fiorita
+        agricolo: 6,      // Sola idrosemina miscuglio autoctono
+        prato: 2,         // Arricchimento
+        bosco_esist: 15,
+        fabbricato: 0
+      },
+      depav: {
+        strada: 45,       // De-sealing e pavimentazione drenante
+        agricolo: 0,
+        prato: 0,
+        bosco_esist: 0,
+        fabbricato: 0
+      },
+      ciclabile: {
+        strada: 25,       // Corsia ciclabile su tracciato già battuto
+        agricolo: 45,     // Massicciata, sottofondo drenante e finitura
+        prato: 45,
+        bosco_esist: 55,
+        fabbricato: 0
+      }
+    };
 
     const TOOL_SPECS = {
-      bosco: { score: 10, costPerM2: 12, name: 'Bosco', coolingPower: 2.5 },
-      umida: { score: 15, costPerM2: 25, name: 'Zona Umida', coolingPower: 3.2 },
-      ripariale: { score: 12, costPerM2: 18, name: 'Fascia Riparia', coolingPower: 2.2 },
-      prato: { score: 8, costPerM2: 6, name: 'Prato Fiorito', coolingPower: 1.0 },
-      depav: { score: 20, costPerM2: 35, name: 'De-pavimentazione', coolingPower: 1.8 },
-      ciclabile: { score: 5, costPerM2: 40, name: 'Pista Ciclabile', coolingPower: -0.2 },
-      reset: { score: 0, costPerM2: 0, name: 'Stato di Fatto', coolingPower: 0.0 }
+      bosco: { score: 10, name: 'Bosco' },
+      umida: { score: 15, name: 'Zona Umida' },
+      ripariale: { score: 12, name: 'Fascia Riparia' },
+      prato: { score: 8, name: 'Prato Fiorito' },
+      depav: { score: 20, name: 'De-pavimentazione' },
+      ciclabile: { score: 5, name: 'Pista Ciclabile' },
+      reset: { score: 0, name: 'Stato di Fatto' }
     };
 
     let activeTool = "bosco";
@@ -202,8 +250,8 @@
     let isMouseDown = false;
     let isPinMode = false;
     let isSatellite = false;
+    let is3D = false;
     let selectedCellId = null;
-    let constraintFeatures = [];
 
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -217,17 +265,19 @@
       container: 'map',
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [8.181, 45.564],
-      zoom: 16,
+      zoom: 16.5,
+      pitch: 0,
+      bearing: 0,
       maxZoom: 22
     });
 
-    // Gestione pittura a trascinamento mouse
+    // Puntamento e disegno a trascinamento senza conflitti
     map.on('mousedown', (e) => {
-      if (e.originalEvent.button === 0 && activeTool !== 'select_only') {
-        const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
+      if (e.originalEvent.button === 0) {
+        const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill'] });
         if (feats.length > 0) {
           isMouseDown = true;
-          map.dragPan.disable(); // Disabilita trascinamento mappa durante la pittura
+          map.dragPan.disable();
           applyActionToCell(feats[0]);
         }
       }
@@ -238,23 +288,78 @@
       map.dragPan.enable();
     });
 
+    // Toggle Vista 3D (Edifici e Alberature Estrusi)
+    document.getElementById('toggle-3d-btn').addEventListener('click', () => {
+      is3D = !is3D;
+      const btn = document.getElementById('toggle-3d-btn');
+      if (is3D) {
+        btn.classList.add('btn-active');
+        map.easeTo({ pitch: 60, bearing: -20, duration: 1000 });
+        if (map.getLayer('cells-layer-3d')) {
+          map.setLayoutProperty('cells-layer-3d', 'visibility', 'visible');
+          map.setLayoutProperty('cells-layer-fill', 'visibility', 'none');
+        }
+        enableBuilding3D(true);
+      } else {
+        btn.classList.remove('btn-active');
+        map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+        if (map.getLayer('cells-layer-3d')) {
+          map.setLayoutProperty('cells-layer-3d', 'visibility', 'none');
+          map.setLayoutProperty('cells-layer-fill', 'visibility', 'visible');
+        }
+        enableBuilding3D(false);
+      }
+    });
+
+    function enableBuilding3D(enable) {
+      if (!map.getLayer('3d-buildings')) {
+        // Cerca il layer sorgente per estrudere i fabbricati reali
+        const layers = map.getStyle().layers;
+        let labelLayerId;
+        for (let i = 0; i < layers.length; i++) {
+          if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+            labelLayerId = layers[i].id;
+            break;
+          }
+        }
+
+        map.addLayer({
+          'id': '3d-buildings',
+          'source': 'composite',
+          'source-layer': 'building',
+          'filter': ['==', 'extrude', 'true'],
+          'type': 'fill-extrusion',
+          'minzoom': 15,
+          'paint': {
+            'fill-extrusion-color': '#2a2e39',
+            'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
+            'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'min_height']],
+            'fill-extrusion-opacity': 0.85
+          }
+        }, labelLayerId);
+      }
+      if (map.getLayer('3d-buildings')) {
+        map.setLayoutProperty('3d-buildings', 'visibility', enable ? 'visible' : 'none');
+      }
+    }
+
     // Ricerca Geografica
     document.getElementById('address-search-btn').addEventListener('click', async () => {
       const q = document.getElementById('address-input').value.trim();
       if (!q) return;
-      document.getElementById('cell-info').innerText = `Ricerca in corso: ${q}...`;
+      document.getElementById('cell-info').innerText = `Ricerca: ${q}...`;
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (data && data.length > 0) {
-        map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 17 });
-        document.getElementById('cell-info').innerText = `Inquadrata: ${data[0].display_name}`;
+        map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 17.5 });
+        document.getElementById('cell-info').innerText = `Località: ${data[0].display_name}`;
       }
     });
 
-    // Generazione Ambito Quadrato 100x100 (10.000 micro-celle da 3x3m)
+    // Generazione Ambito Quadrato 100x100 celle (1x1m = 10.000 m² = 1 Ettaro)
     document.getElementById('new-grid-btn').addEventListener('click', () => {
       isPinMode = true;
-      document.getElementById('cell-info').innerText = "Fai clic sulla mappa per posizionare il quadratone di progetto (10.000 celle 3x3m).";
+      document.getElementById('cell-info').innerText = "Clicca per fissare l'ambito esecutivo (100x100m, celle da 1x1 metro).";
       map.getCanvas().style.cursor = 'crosshair';
     });
 
@@ -262,68 +367,91 @@
       if (isPinMode) {
         isPinMode = false;
         map.getCanvas().style.cursor = '';
-        generateSquareGrid(e.lngLat.lng, e.lngLat.lat);
-        return;
-      }
-
-      if (activeTool === 'select_only') {
-        const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
-        if (feats.length > 0) openInspectModal(feats[0]);
+        generateGrid1x1(e.lngLat.lng, e.lngLat.lat);
       }
     });
 
-    // Tasto Destro: Ispezione Pre vs Post senza apportare modifiche
+    // Tasto Destro: Ispezione Pre vs Post senza modifiche
     map.on('contextmenu', (e) => {
       e.preventDefault();
-      const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer'] });
+      const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill', 'cells-layer-3d'] });
       if (feats.length > 0) openInspectModal(feats[0]);
     });
 
-    function generateSquareGrid(centerLon, centerLat) {
-      document.getElementById('cell-info').innerText = "Costruzione griglia quadrata 100x100 (10.000 celle)...";
+    function detectPointLandUse(lon, lat) {
+      const point = map.project([lon, lat]);
+      const bbox = [[point.x - 2, point.y - 2], [point.x + 2, point.y + 2]];
+      const feats = map.queryRenderedFeatures(bbox).filter(f => !f.layer.id.startsWith('cells-'));
+
+      for (const f of feats) {
+        const lid = (f.layer.id || '').toLowerCase();
+        const cls = (f.properties?.class || f.properties?.type || '').toLowerCase();
+        if (lid.includes('building')) return 'fabbricato';
+        if (cls.includes('forest') || cls.includes('wood')) return 'bosco_esist';
+        if (cls.includes('water') || lid.includes('water')) return 'acqua';
+        if (lid.includes('road') || cls.includes('highway')) return 'strada';
+        if (cls.includes('meadow') || cls.includes('grass')) return 'prato';
+      }
+      return 'agricolo';
+    }
+
+    function generateGrid1x1(centerLon, centerLat) {
+      document.getElementById('cell-info').innerText = "Campionamento stato di fatto e generazione micro-celle 1x1m...";
       const centerUtm = proj4("EPSG:4326", "EPSG:32632", [centerLon, centerLat]);
-      const cellSize = 3.0;
-      const countSide = 100; // 100x100 = 10.000 celle
-      const halfExtent = (countSide * cellSize) / 2;
+      const cellSize = 1.0; // 1x1 METRO
+      const countSide = 100; // 100 x 100 = 10.000 celle
+      const half = (countSide * cellSize) / 2;
 
       cellsData = [];
       let id = 1;
 
       for (let r = 0; r < countSide; r++) {
         for (let c = 0; c < countSide; c++) {
-          const x = (centerUtm[0] - halfExtent) + (c * cellSize) + (cellSize / 2);
-          const y = (centerUtm[1] - halfExtent) + (r * cellSize) + (cellSize / 2);
+          const x = (centerUtm[0] - half) + (c * cellSize) + 0.5;
+          const y = (centerUtm[1] - half) + (r * cellSize) + 0.5;
+
+          const wgs = proj4("EPSG:32632", "EPSG:4326", [x, y]);
+          const baseUse = detectPointLandUse(wgs[0], wgs[1]);
 
           cellsData.push({
             cell_id: id++,
             x_coord: x,
             y_coord: y,
+            stato_fatto: baseUse,
             stato_progetto: 'stato_di_fatto',
-            eco_score: 0
+            eco_score: baseUse === 'bosco_esist' ? 10 : 0
           });
         }
       }
 
       renderCells();
       updateMetrics();
-      document.getElementById('cell-info').innerText = `Ambito quadrato generato: 10.000 celle pronte.`;
+      document.getElementById('cell-info').innerText = `Reticolo 1x1m pronto (10.000 celle su 1 ettaro). Trascina per dipingere.`;
     }
 
     function buildGeoJSON() {
       return {
         type: "FeatureCollection",
         features: cellsData.map(c => {
-          const x = c.x_coord, y = c.y_coord, h = 1.5;
+          const x = c.x_coord, y = c.y_coord, h = 0.5; // Metà cella 1x1m
           const p1 = proj4("EPSG:32632", "EPSG:4326", [x - h, y - h]);
           const p2 = proj4("EPSG:32632", "EPSG:4326", [x + h, y - h]);
           const p3 = proj4("EPSG:32632", "EPSG:4326", [x + h, y + h]);
           const p4 = proj4("EPSG:32632", "EPSG:4326", [x - h, y + h]);
 
+          // Altezza per estrusione 3D delle alberature
+          let height3d = 0;
+          if (c.stato_progetto === 'bosco' || c.stato_fatto === 'bosco_esist') height3d = 7.5; // 7.5 metri d'altezza alberi
+          else if (c.stato_progetto === 'ripariale') height3d = 4.5;
+          else if (c.stato_progetto === 'umida') height3d = 0.3;
+
           return {
             type: "Feature",
             properties: {
               id: c.cell_id,
+              stato_fatto: c.stato_fatto,
               stato: c.stato_progetto || 'stato_di_fatto',
+              height: height3d,
               selected: c.cell_id === selectedCellId ? 1 : 0
             },
             geometry: {
@@ -340,39 +468,61 @@
       if (!map.getSource('cells-source')) {
         map.addSource('cells-source', { type: 'geojson', data: geojson });
 
-        // Riempimento cromatico celle
+        // Layer 2D Piano: colorazione ibrida (Stato di fatto + Progetto)
         map.addLayer({
-          id: 'cells-layer',
+          id: 'cells-layer-fill',
           type: 'fill',
           source: 'cells-source',
           paint: {
             'fill-color': [
+              'case',
+              ['!=', ['get', 'stato'], 'stato_di_fatto'],
+              [
+                'match', ['get', 'stato'],
+                'bosco', '#2D6A4F',
+                'umida', '#2A9D8F',
+                'ripariale', '#40916C',
+                'prato', '#B5E48C',
+                'depav', '#52B788',
+                'ciclabile', '#DDA15E',
+                '#333333'
+              ],
+              // Altrimenti mostra i colori dello STATO DI FATTO
+              [
+                'match', ['get', 'stato_fatto'],
+                'bosco_esist', '#556b2f',
+                'agricolo', '#8f7d4e',
+                'prato', '#4a6b57',
+                'strada', '#444a57',
+                'fabbricato', '#c0392b',
+                '#2c3e50'
+              ]
+            ],
+            'fill-opacity': 0.75
+          }
+        });
+
+        // Layer 3D: Estrusione volumetrica della chioma degli alberi
+        map.addLayer({
+          id: 'cells-layer-3d',
+          type: 'fill-extrusion',
+          source: 'cells-source',
+          layout: { 'visibility': 'none' },
+          paint: {
+            'fill-extrusion-color': [
               'match', ['get', 'stato'],
               'bosco', '#2D6A4F',
-              'umida', '#2A9D8F',
               'ripariale', '#40916C',
-              'prato', '#B5E48C',
-              'depav', '#52B788',
-              'ciclabile', '#DDA15E',
-              '#1e1e1e'
+              'umida', '#2A9D8F',
+              '#556b2f'
             ],
-            'fill-opacity': 0.65
+            'fill-extrusion-height': ['get', 'height'],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.9
           }
         });
 
-        // Contorno geometrico normale
-        map.addLayer({
-          id: 'cells-outline',
-          type: 'line',
-          source: 'cells-source',
-          paint: {
-            'line-color': '#00ff88',
-            'line-width': 0.5,
-            'line-opacity': 0.35
-          }
-        });
-
-        // Evidenziazione Fluorescente perimetro cella ispezionata
+        // Contorno fluorescente perimetro cella ispezionata
         map.addLayer({
           id: 'cell-highlight',
           type: 'line',
@@ -385,16 +535,11 @@
           }
         });
 
-        // Hover dinamico con lettura suolo istantanea
-        map.on('mousemove', 'cells-layer', (e) => {
+        map.on('mousemove', 'cells-layer-fill', (e) => {
           if (e.features && e.features.length > 0) {
             const f = e.features[0];
-            const info = detectCurrentLanduse(f);
-            document.getElementById('cell-info').innerHTML = `🔍 <b>Cella #${f.properties.id}</b> | Uso di fatto: <b>${info}</b> | Stato Progetto: <b>${f.properties.stato}</b>`;
-
-            if (isMouseDown && activeTool !== 'select_only') {
-              applyActionToCell(f);
-            }
+            document.getElementById('cell-info').innerHTML = `🔍 <b>Cella #${f.properties.id}</b> | Stato di Fatto: <b>${f.properties.stato_fatto}</b> | Progetto: <b>${f.properties.stato}</b>`;
+            if (isMouseDown) applyActionToCell(f);
           }
         });
       } else {
@@ -402,56 +547,75 @@
       }
     }
 
-    function detectCurrentLanduse(feature) {
-      const coords = feature.geometry.coordinates[0];
-      const screenPoints = coords.map(c => map.project(c));
-      const xs = screenPoints.map(p => p.x);
-      const ys = screenPoints.map(p => p.y);
-      const bbox = [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]];
-
-      const underFeatures = map.queryRenderedFeatures(bbox).filter(f => f.layer.id !== 'cells-layer' && f.layer.id !== 'cells-outline');
-      for (const f of underFeatures) {
-        const lid = (f.layer.id || '').toLowerCase();
-        const cls = (f.properties?.class || f.properties?.type || '').toLowerCase();
-        if (lid.includes('building')) return "Edificio / Fabbricato";
-        if (cls.includes('forest') || cls.includes('wood')) return "Bosco naturale";
-        if (cls.includes('water') || lid.includes('water')) return "Corpo Idrico";
-        if (cls.includes('farmland') || cls.includes('farm')) return "Zona Agricola";
-        if (cls.includes('grass') || cls.includes('meadow')) return "Prato / Pascolo";
-        if (lid.includes('road')) return "Infrastruttura Stradale";
-      }
-      return "Superficie Libera / Terreno Agricolo";
-    }
-
-    function checkConstraintIntersection(feature) {
-      if (constraintFeatures.length === 0) return false;
-      const c = feature.geometry.coordinates[0][0];
-      return constraintFeatures.some(poly => {
-        return poly.bbox && c[0] >= poly.bbox[0] && c[0] <= poly.bbox[2] && c[1] >= poly.bbox[1] && c[1] <= poly.bbox[3];
-      });
-    }
-
     function applyActionToCell(feature) {
       const cellId = feature.properties.id;
-      const isUnderBuilding = detectCurrentLanduse(feature).includes("Edificio");
+      const target = cellsData.find(c => c.cell_id === cellId);
+      if (!target) return;
 
-      if (isUnderBuilding && activeTool !== 'reset') {
-        document.getElementById('cell-info').innerHTML = `⚠️ <b>Cella #${cellId}</b>: Presenza di fabbricato vincolato! Azione bloccata.`;
+      if (target.stato_fatto === 'fabbricato' && activeTool !== 'reset') {
+        document.getElementById('cell-info').innerHTML = `⚠️ <b>Cella #${cellId}</b>: Fabbricato vincolato! Azione bloccata.`;
         return;
       }
 
-      if (checkConstraintIntersection(feature)) {
-        alert(`Attenzione: La Cella #${cellId} si trova all'interno della fascia di rispetto fluviale/vincolo idraulico!`);
-      }
+      const spec = TOOL_SPECS[activeTool];
+      target.stato_progetto = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
+      target.eco_score = activeTool === 'reset' ? (target.stato_fatto === 'bosco_esist' ? 10 : 0) : spec.score;
 
-      const target = cellsData.find(c => c.cell_id === cellId);
-      if (target) {
-        const spec = TOOL_SPECS[activeTool];
-        target.stato_progetto = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
-        target.eco_score = spec.score;
-        map.getSource('cells-source').setData(buildGeoJSON());
-        updateMetrics();
-      }
+      map.getSource('cells-source').setData(buildGeoJSON());
+      updateMetrics();
+    }
+
+    // Calcolo Connettività Ibrida (Nuovo Bosco collegato a Bosco Già Esistente)
+    function calculateCorridors() {
+      const forestKeys = new Set();
+      cellsData.forEach(c => {
+        const isForest = (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale' || (c.stato_progetto === 'stato_di_fatto' && c.stato_fatto === 'bosco_esist'));
+        if (isForest) {
+          forestKeys.add(`${Math.round(c.x_coord)},${Math.round(c.y_coord)}`);
+        }
+      });
+
+      let links = 0;
+      forestKeys.forEach(k => {
+        const [x, y] = k.split(',').map(Number);
+        // Distanza 1 metro
+        if (forestKeys.has(`${x + 1},${y}`)) links++;
+        if (forestKeys.has(`${x},${y + 1}`)) links++;
+      });
+      return links;
+    }
+
+    function updateMetrics() {
+      let score = 0, totalCost = 0, totalForestM2 = 0;
+
+      cellsData.forEach(c => {
+        score += (c.eco_score || 0);
+
+        // Calcolo differenziale di spesa
+        if (c.stato_progetto && c.stato_progetto !== 'stato_di_fatto') {
+          const matrix = COST_MATRIX[c.stato_progetto];
+          if (matrix) {
+            const unitCost = matrix[c.stato_fatto] !== undefined ? matrix[c.stato_fatto] : 20;
+            totalCost += unitCost; // Cella da 1x1m = 1 m²
+          }
+        }
+
+        const isForest = (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale' || (c.stato_progetto === 'stato_di_fatto' && c.stato_fatto === 'bosco_esist'));
+        if (isForest) totalForestM2++;
+      });
+
+      const corridorLinks = calculateCorridors();
+      const corridorBonus = corridorLinks * 2;
+      const finalScore = score + corridorBonus;
+
+      document.getElementById('total-score').innerText = `Bio: ${finalScore} PT`;
+      document.getElementById('total-cost').innerText = `Costo: ${totalCost.toLocaleString('it-IT')} €`;
+      document.getElementById('corridor-score').innerText = `Corridoi: ${corridorLinks} link (+${corridorBonus} PT)`;
+
+      // Target forestale (30% di 10.000 m² = 3.000 m²)
+      const percForest = Math.min(100, Math.round((totalForestM2 / 3000) * 100));
+      document.getElementById('target-forest-val').innerText = `${percForest}% (${totalForestM2} m²)`;
+      document.getElementById('target-forest-bar').style.width = `${percForest}%`;
     }
 
     function openInspectModal(feature) {
@@ -461,18 +625,17 @@
       const target = cellsData.find(c => c.cell_id === cellId);
       if (!target) return;
 
-      const pre = detectCurrentLanduse(feature);
-      const post = target.stato_progetto || 'stato_di_fatto';
-      const spec = TOOL_SPECS[post] || TOOL_SPECS.reset;
-      const cost = spec.costPerM2 ? `${spec.costPerM2 * 9} €` : '0 €';
+      const pre = target.stato_fatto;
+      const post = target.stato_progetto;
+      const matrix = COST_MATRIX[post];
+      const diffCost = matrix ? `${matrix[pre] || 0} €/m²` : '0 €/m²';
 
-      document.getElementById('inspect-cell-id').innerText = `Cella #${cellId}`;
-      document.getElementById('inspect-coords').innerText = `X: ${Math.round(target.x_coord)}, Y: ${Math.round(target.y_coord)}`;
-      document.getElementById('inspect-landuse-pre').innerText = pre;
-      document.getElementById('inspect-landuse-post').innerText = spec.name;
-      document.getElementById('inspect-points').innerText = `+${spec.score} Bio-Punti`;
-      document.getElementById('inspect-cost').innerText = cost;
-      document.getElementById('inspect-constraint').innerText = checkConstraintIntersection(feature) ? "⚠️ Fascia Rispetto Fluviale" : "Nessun vincolo attivo";
+      document.getElementById('inspect-cell-id').innerText = `Cella #${cellId} (1x1m)`;
+      document.getElementById('inspect-pre').innerText = pre.toUpperCase();
+      document.getElementById('inspect-post').innerText = post === 'stato_di_fatto' ? 'Nessun Intervento' : post.toUpperCase();
+      document.getElementById('inspect-cost').innerText = diffCost;
+      document.getElementById('inspect-points').innerText = `+${target.eco_score} PT`;
+      document.getElementById('inspect-corridor').innerText = (target.stato_progetto === 'bosco' || target.stato_fatto === 'bosco_esist') ? 'Attivo nel network' : 'Non connesso';
 
       document.getElementById('inspect-modal').style.display = 'block';
       map.getSource('cells-source').setData(buildGeoJSON());
@@ -484,59 +647,7 @@
       if (map.getSource('cells-source')) map.getSource('cells-source').setData(buildGeoJSON());
     };
 
-    function updateMetrics() {
-      let score = 0, cost = 0, forestCells = 0;
-      cellsData.forEach(c => {
-        score += (c.eco_score || 0);
-        const spec = TOOL_SPECS[c.stato_progetto || 'reset'];
-        if (spec) cost += (spec.costPerM2 * 9);
-        if (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale') forestCells++;
-      });
-
-      document.getElementById('total-score').innerText = `Bio: ${score} PT`;
-      document.getElementById('total-cost').innerText = `${cost.toLocaleString('it-IT')} €`;
-
-      // Target forestale (30% su 10.000 celle = 3.000 celle)
-      const forestPerc = Math.min(100, Math.round((forestCells / 3000) * 100));
-      document.getElementById('target-forest-val').innerText = `${forestPerc}%`;
-      document.getElementById('target-forest-bar').style.width = `${forestPerc}%`;
-
-      // Target budget (150.000 €)
-      const budgetPerc = Math.min(100, Math.round((cost / 150000) * 100));
-      document.getElementById('target-budget-val').innerText = `${budgetPerc}%`;
-      document.getElementById('target-budget-bar').style.width = `${budgetPerc}%`;
-      if (budgetPerc >= 100) document.getElementById('target-budget-bar').style.background = '#e63946';
-    }
-
-    // Caricamento Vincolo GeoJSON
-    document.getElementById('vincolo-file-input').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const geo = JSON.parse(event.target.result);
-          constraintFeatures = geo.features || [geo];
-          if (!map.getSource('vincolo-src')) {
-            map.addSource('vincolo-src', { type: 'geojson', data: geo });
-            map.addLayer({
-              id: 'vincolo-layer',
-              type: 'fill',
-              source: 'vincolo-src',
-              paint: { 'fill-color': '#e63946', 'fill-opacity': 0.35, 'fill-outline-color': '#e63946' }
-            });
-          } else {
-            map.getSource('vincolo-src').setData(geo);
-          }
-          alert("Fascia di vincolo caricata con successo.");
-        } catch(err) {
-          alert("Errore nel formato del file GeoJSON.");
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    // Basemap Satellite
+    // Satellite Multi-Zoom
     document.getElementById('toggle-basemap-btn').addEventListener('click', () => {
       isSatellite = !isSatellite;
       const btn = document.getElementById('toggle-basemap-btn');
@@ -550,7 +661,7 @@
           });
         }
         if (!map.getLayer('sat-layer')) {
-          map.addLayer({ id: 'sat-layer', type: 'raster', source: 'esri-sat', minzoom: 0, maxzoom: 22 }, 'cells-layer');
+          map.addLayer({ id: 'sat-layer', type: 'raster', source: 'esri-sat', minzoom: 0, maxzoom: 22 }, 'cells-layer-fill');
         } else {
           map.setLayoutProperty('sat-layer', 'visibility', 'visible');
         }
@@ -560,13 +671,13 @@
       }
     });
 
-    // Esportazione GeoJSON per QGIS
+    // Esportazione GeoJSON
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       const geo = buildGeoJSON();
       const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geo));
       const a = document.createElement('a');
       a.setAttribute("href", str);
-      a.setAttribute("download", "masterplan_openlandscape.geojson");
+      a.setAttribute("download", "masterplan_1x1m_esecutivo.geojson");
       document.body.appendChild(a);
       a.click();
       a.remove();
