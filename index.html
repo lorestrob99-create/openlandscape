@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - DSS & Pianificazione Territoriale</title>
+  <title>OpenLandscape - Piattaforma Territoriale On-Demand</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,108 +14,120 @@
     .header-bar {
       position: absolute; top: 12px; left: 12px; right: 12px;
       display: flex; justify-content: space-between; align-items: center;
-      background: rgba(18, 18, 18, 0.92); backdrop-filter: blur(8px);
-      padding: 10px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-      z-index: 10;
+      background: rgba(18, 18, 18, 0.94); backdrop-filter: blur(8px);
+      padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      z-index: 20;
     }
-    .title { font-weight: 700; letter-spacing: 0.5px; color: #52B788; font-size: 15px; }
+    .title { font-weight: 700; color: #52B788; font-size: 15px; }
+    
+    /* Barra di Ricerca Indirizzo */
+    .search-box { display: flex; gap: 6px; }
+    .search-input {
+      background: #222; border: 1px solid #444; color: #fff; padding: 6px 10px;
+      border-radius: 6px; font-size: 12px; width: 220px; outline: none;
+    }
+    .search-btn {
+      background: #2D6A4F; border: none; color: #fff; padding: 6px 12px;
+      border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;
+    }
+
     .metrics-container { display: flex; gap: 8px; align-items: center; }
-    .metric-badge { background: #1b4332; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid #40916c; }
-    .score-badge { background: #2D6A4F; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; }
-    .cost-badge { background: #1f2937; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid #4b5563; color: #93c5fd; }
-    .temp-badge { background: #3b2818; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid #d97706; color: #fde68a; }
+    .metric-badge { background: #1b4332; padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #40916c; }
+    .score-badge { background: #2D6A4F; padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 11px; }
+    .cost-badge { background: #1f2937; padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #4b5563; color: #93c5fd; }
+    .temp-badge { background: #3b2818; padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #d97706; color: #fde68a; }
 
     .nav-btn {
-      background: #374151; border: 1px solid #6b7280; color: #fff; padding: 6px 12px;
+      background: #374151; border: 1px solid #6b7280; color: #fff; padding: 5px 10px;
       border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
     .nav-btn:hover { background: #4b5563; }
     .nav-btn.active-toggle { background: #2563eb; border-color: #60a5fa; }
 
+    /* Modalità Scelta Ambito */
+    .pin-mode-bar {
+      position: absolute; top: 68px; left: 50%; transform: translateX(-50%);
+      background: #d97706; color: #fff; padding: 8px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; z-index: 25; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      display: flex; gap: 10px; align-items: center;
+    }
+    .pin-mode-bar button {
+      background: #fff; color: #000; border: none; border-radius: 12px;
+      padding: 3px 8px; font-size: 11px; cursor: pointer; font-weight: 700;
+    }
+
     .toolbox {
       position: absolute; top: 76px; left: 12px;
-      background: rgba(18, 18, 18, 0.92); backdrop-filter: blur(8px);
-      padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-      z-index: 10; display: flex; flex-direction: column; gap: 6px; width: 210px;
+      background: rgba(18, 18, 18, 0.94); backdrop-filter: blur(8px);
+      padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      z-index: 15; display: flex; flex-direction: column; gap: 5px; width: 215px;
       max-height: calc(100vh - 160px); overflow-y: auto;
     }
-    .toolbox label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 1px; margin-top: 4px; margin-bottom: 2px; }
+    .toolbox label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 1px; margin-top: 4px; }
     .tool-btn {
-      background: #222; border: 1px solid #444; color: #eee; padding: 8px 10px;
-      border-radius: 6px; text-align: left; cursor: pointer; font-size: 12px;
+      background: #222; border: 1px solid #444; color: #eee; padding: 7px 9px;
+      border-radius: 6px; text-align: left; cursor: pointer; font-size: 11px;
       display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;
     }
     .tool-btn:hover { background: #333; border-color: #666; }
     .tool-btn.active { background: #2D6A4F; border-color: #52B788; color: #fff; }
     
-    .action-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0; }
+    .action-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 4px 0; }
     .export-btn {
-      background: #1e3a5f; border: 1px solid #3a86ff; color: #fff; padding: 8px;
-      border-radius: 6px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600;
+      background: #1e3a5f; border: 1px solid #3a86ff; color: #fff; padding: 7px;
+      border-radius: 6px; text-align: center; cursor: pointer; font-size: 11px; font-weight: 600;
       transition: all 0.2s;
     }
     .export-btn:hover { background: #2563eb; }
 
-    /* Dashboard Analitica */
     .dashboard-panel {
       position: absolute; top: 76px; right: 12px;
-      background: rgba(18, 18, 18, 0.92); backdrop-filter: blur(8px);
-      padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-      z-index: 10; width: 240px; font-size: 12px;
+      background: rgba(18, 18, 18, 0.94); backdrop-filter: blur(8px);
+      padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      z-index: 15; width: 230px; font-size: 11px;
     }
-    .dash-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: #ccc; }
+    .dash-row { display: flex; justify-content: space-between; margin-bottom: 5px; color: #ccc; }
     .dash-val { font-weight: 700; color: #52B788; }
-    .progress-bar-bg { background: #333; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 4px; margin-bottom: 10px; }
+    .progress-bar-bg { background: #333; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 2px; margin-bottom: 8px; }
     .progress-bar-fill { background: #52B788; height: 100%; width: 0%; transition: width 0.3s; }
 
     #cell-info {
-      position: absolute; bottom: 20px; left: 12px;
-      background: rgba(15, 15, 15, 0.95); padding: 10px 14px; border-radius: 8px;
-      font-size: 12px; border: 1px solid #52B788; z-index: 20; color: #eee;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6); min-width: 250px;
+      position: absolute; bottom: 18px; left: 12px;
+      background: rgba(15, 15, 15, 0.96); padding: 10px 14px; border-radius: 8px;
+      font-size: 11px; border: 1px solid #52B788; z-index: 20; color: #eee;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6); min-width: 270px;
     }
-
-    /* Modal Concept */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none;
-      align-items: center; justify-content: center; z-index: 100;
-    }
-    .modal-card {
-      background: #1e1e1e; border: 1px solid #444; border-radius: 10px; padding: 24px;
-      max-width: 500px; width: 90%; color: #ddd; line-height: 1.5; font-size: 13px;
-    }
-    .modal-card h3 { color: #52B788; margin-top: 0; }
-
-    /* Stile per Stampa PDF */
-    @media print {
-      body { background: #fff !important; color: #000 !important; overflow: visible !important; }
-      #map, .toolbox, .header-bar, #cell-info, .dashboard-panel { display: none !important; }
-      #print-report { display: block !important; padding: 20px; }
-    }
-    #print-report { display: none; font-family: sans-serif; color: #111; }
-    #print-report table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    #print-report th, #print-report td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    #print-report th { background: #f4f4f4; }
   </style>
 </head>
 <body>
 
   <div class="header-bar">
-    <div class="title">OpenLandscape <span>// DSS Territoriale</span></div>
-    <div class="metrics-container">
-      <div class="temp-badge" id="temp-score">ΔT UHI: 0.0 °C</div>
-      <div class="cost-badge" id="total-cost">Costo: 0 €</div>
-      <div class="metric-badge" id="corridor-score">Corridoi: 0 link</div>
-      <div class="score-badge" id="total-score">Bio-Punti: 0 PT</div>
-      <button class="nav-btn" id="toggle-compare-btn">👁️ Vista Progetto</button>
-      <button class="nav-btn" id="toggle-basemap-btn">🛰️ Satellite</button>
-      <button class="nav-btn" id="info-modal-btn">ℹ️ Concept</button>
+    <div class="title">OpenLandscape</div>
+
+    <!-- Ricerca Geografica -->
+    <div class="search-box">
+      <input type="text" id="address-input" class="search-input" placeholder="Città, via o località..." />
+      <button class="search-btn" id="address-search-btn">Cerca</button>
     </div>
+
+    <div class="metrics-container">
+      <div class="temp-badge" id="temp-score">ΔT: 0.0 °C</div>
+      <div class="cost-badge" id="total-cost">0 €</div>
+      <div class="metric-badge" id="corridor-score">Corridoi: 0</div>
+      <div class="score-badge" id="total-score">Bio: 0 PT</div>
+      <button class="nav-btn" id="new-grid-btn">📍 Genera Ambito</button>
+      <button class="nav-btn" id="toggle-basemap-btn">🛰️ Satellite</button>
+    </div>
+  </div>
+
+  <div class="pin-mode-bar" id="pin-instruction" style="display: none;">
+    <span>Clicca sulla mappa per fissare il centro del tuo ambito ottagonale (10.000 celle 3x3m)</span>
+    <button onclick="cancelPinMode()">Annulla</button>
   </div>
 
   <div class="toolbox">
     <label>Modalità Disegno</label>
-    <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">🖌️ <i>Trascina per dipingere</i></div>
+    <div style="font-size: 10px; color: #aaa;">🖌️ <i>Trascina per dipingere</i></div>
 
     <label>Interventi NBS</label>
     <button class="tool-btn active" data-action="bosco">🌲 Bosco <span>+10</span></button>
@@ -129,54 +141,21 @@
     <button class="tool-btn" data-action="reset">🔄 Ripristina <span>0</span></button>
     
     <div class="action-divider"></div>
-    <label>Esportazione & Report</label>
+    <label>Esportazione</label>
     <button class="export-btn" id="export-geojson-btn">📥 Salva GeoJSON (QGIS)</button>
-    <button class="export-btn" id="print-pdf-btn" style="background: #2d6a4f; border-color: #52b788; margin-top: 4px;">📄 Stampa Scheda PDF</button>
   </div>
 
-  <!-- Dashboard Analitica -->
   <div class="dashboard-panel">
-    <div style="font-weight: 700; color: #fff; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">📊 Bilancio Ambientale</div>
+    <div style="font-weight: 700; color: #fff; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 4px;">📊 Bilancio Spaziale</div>
+    <div class="dash-row"><span>Uso Attuale:</span> <span class="dash-val" id="current-landuse-stat">-</span></div>
     <div class="dash-row"><span>Superficie Drenante:</span> <span class="dash-val" id="perm-percent">0%</span></div>
     <div class="progress-bar-bg"><div class="progress-bar-fill" id="perm-bar"></div></div>
     <div class="dash-row"><span>Area Trasformata:</span> <span class="dash-val" id="transformed-area">0 m²</span></div>
     <div class="dash-row"><span>Infiltrazione Idrica:</span> <span class="dash-val" id="infilt-volume">0 m³/anno</span></div>
-    <div class="dash-row"><span>Mitigazione Termica:</span> <span class="dash-val" id="cooling-val">0.0 °C</span></div>
   </div>
 
-  <div id="cell-info">Connessione al territorio...</div>
+  <div id="cell-info">Cerca un luogo o clicca 'Genera Ambito' per iniziare.</div>
   <div id="map"></div>
-
-  <!-- Modale Concept Progettuale -->
-  <div class="modal-overlay" id="concept-modal">
-    <div class="modal-card">
-      <h3>OpenLandscape: Metodologia DSS</h3>
-      <p>Piattaforma di supporto alle decisioni per la transizione ecologica e la resilienza territoriale operante su maglia discreta da 5x5 metri.</p>
-      <ul>
-        <li><b>Connettività Ecologica:</b> Calcolo delle matrici contigue per l'identificazione di corridoi faunistici.</li>
-        <li><b>Microclima & UHI:</b> Stima del potenziale di raffrescamento radiativo basato sull'indice di evapotraspirazione delle NBS.</li>
-        <li><b>Invarianza Idraulica:</b> Valutazione speditiva della ricarica delle falde per contrastare il ruscellamento superficiale.</li>
-      </ul>
-      <button class="nav-btn" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('concept-modal').style.display='none'">Chiudi Scheda</button>
-    </div>
-  </div>
-
-  <!-- Contenitore Stampabile PDF -->
-  <div id="print-report">
-    <h1>OpenLandscape // Report di Sintesi Progettuale</h1>
-    <p><b>Data:</b> <span id="report-date"></span> | <b>Risoluzione maglia:</b> 5x5 metri</p>
-    <hr>
-    <h3>Quadro Prestazionale e Bilancio Ambientale</h3>
-    <table>
-      <tr><th>Indicatore</th><th>Valore Rilevato</th></tr>
-      <tr><td>Punteggio Biodiversità Complessivo</td><td id="rep-score">-</td></tr>
-      <tr><td>Connessioni di Corridoio Ecologico</td><td id="rep-corridors">-</td></tr>
-      <tr><td>Superficie Drenante / Permeabile</td><td id="rep-perm">-</td></tr>
-      <tr><td>Volume Infiltrato Annuo Stimato</td><td id="rep-water">-</td></tr>
-      <tr><td>Mitigazione Isola di Calore (ΔT Stimato)</td><td id="rep-temp">-</td></tr>
-      <tr><td>Stima di Spesa Opere a Verde (Costo Lordo)</td><td id="rep-cost">-</td></tr>
-    </table>
-  </div>
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
@@ -199,11 +178,11 @@
 
     let activeTool = "bosco";
     let cellsData = [];
-    let initialZoomDone = false;
     let isMouseDown = false;
     let lastModifiedCellId = null;
+    let isPinMode = false;
     let isSatellite = false;
-    let isProjectVisible = true;
+    let activeBoundsList = [];
 
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -217,34 +196,155 @@
       container: 'map',
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [8.181, 45.564],
-      zoom: 17
+      zoom: 16,
+      maxZoom: 22 // Consente zoom ravvicinato senza limiti restrittivi
     });
 
     window.addEventListener('mousedown', () => { isMouseDown = true; });
     window.addEventListener('mouseup', () => { isMouseDown = false; lastModifiedCellId = null; });
 
-    async function loadCells() {
-      let allRows = [];
-      const batchSize = 1000;
-      const targetBatches = 20;
+    // Ricerca Geografica con Nominatim OpenStreetMap
+    document.getElementById('address-search-btn').addEventListener('click', async () => {
+      const query = document.getElementById('address-input').value.trim();
+      if (!query) return;
 
-      for (let i = 0; i < targetBatches; i++) {
-        const from = i * batchSize;
-        const to = from + batchSize - 1;
-        const { data, error } = await dbClient
-          .from('celle_territorio')
-          .select('*')
-          .range(from, to);
+      document.getElementById('cell-info').innerText = `Ricerca in corso: ${query}...`;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const results = await res.json();
+        if (results && results.length > 0) {
+          const first = results[0];
+          map.flyTo({ center: [parseFloat(first.lon), parseFloat(first.lat)], zoom: 17 });
+          document.getElementById('cell-info').innerText = `Inquadrata: ${first.display_name}`;
+        } else {
+          document.getElementById('cell-info').innerText = `Nessun luogo trovato per "${query}".`;
+        }
+      } catch (err) {
+        document.getElementById('cell-info').innerText = `Errore di connessione nella ricerca.`;
+      }
+    });
 
-        if (error || !data || data.length === 0) break;
-        allRows = allRows.concat(data);
-        document.getElementById('cell-info').innerText = `Caricamento celle: ${allRows.length}...`;
+    // Controllo Ambiti Occupati
+    async function loadOccupiedZones() {
+      const { data } = await dbClient.from('ambiti_progetto').select('*');
+      if (data) {
+        activeBoundsList = data;
+        renderOccupiedBorders();
+      }
+    }
+
+    function renderOccupiedBorders() {
+      const features = activeBoundsList.map(a => ({
+        type: "Feature",
+        geometry: a.bbox
+      }));
+
+      const geojson = { type: "FeatureCollection", features };
+
+      if (!map.getSource('occupied-source')) {
+        map.addSource('occupied-source', { type: 'geojson', data: geojson });
+        map.addLayer({
+          id: 'occupied-layer',
+          type: 'line',
+          source: 'occupied-source',
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 2,
+            'line-dasharray': [2, 2]
+          }
+        });
+      } else {
+        map.getSource('occupied-source').setData(geojson);
+      }
+    }
+
+    // Modalità Segnaposto Ambito
+    document.getElementById('new-grid-btn').addEventListener('click', () => {
+      isPinMode = true;
+      document.getElementById('pin-instruction').style.display = 'flex';
+      map.getCanvas().style.cursor = 'crosshair';
+    });
+
+    window.cancelPinMode = () => {
+      isPinMode = false;
+      document.getElementById('pin-instruction').style.display = 'none';
+      map.getCanvas().style.cursor = '';
+    };
+
+    map.on('click', async (e) => {
+      if (!isPinMode) return;
+
+      const clickLon = e.lngLat.lng;
+      const clickLat = e.lngLat.lat;
+
+      // Verifica collisione con ambiti già registrati
+      const isOverlapping = activeBoundsList.some(amb => {
+        const dX = Math.abs(amb.center_lon - clickLon);
+        const dY = Math.abs(amb.center_lat - clickLat);
+        return dX < 0.003 && dY < 0.003; // Circa 300 metri di raggio
+      });
+
+      if (isOverlapping) {
+        alert("Quest'area è già stata riservata o lavorata da un altro progetto! Scegli un'area adiacente o libera.");
+        return;
       }
 
-      cellsData = allRows;
+      isPinMode = false;
+      document.getElementById('pin-instruction').style.display = 'none';
+      map.getCanvas().style.cursor = '';
+
+      generateOctagonGrid(clickLon, clickLat);
+    });
+
+    // Generazione Griglia Ottagonale da 10.000 micro-celle (3x3m)
+    function generateOctagonGrid(centerLon, centerLat) {
+      document.getElementById('cell-info').innerText = "Generazione ambito ottagonale 3x3m (10.000 celle)...";
+
+      const centerUtm = proj4("EPSG:4326", "EPSG:32632", [centerLon, centerLat]);
+      const cellSize = 3.0; // 3x3 metri
+      const radiusCells = 55; // Crea un reticolo di circa 100x100 celle a forma di ottagono smussato
+      const cutoff = 25; // Taglio degli angoli per sagoma ottagonale
+
+      cellsData = [];
+      let idCounter = 1;
+
+      for (let row = -radiusCells; row <= radiusCells; row++) {
+        for (let col = -radiusCells; col <= radiusCells; col++) {
+          // Equazione ottagono simmetrico
+          if (Math.abs(row) + Math.abs(col) <= (radiusCells * 2 - cutoff)) {
+            const x = centerUtm[0] + (col * cellSize);
+            const y = centerUtm[1] + (row * cellSize);
+
+            cellsData.push({
+              cell_id: idCounter++,
+              x_coord: x,
+              y_coord: y,
+              stato_progetto: 'stato_di_fatto',
+              eco_score: 0
+            });
+          }
+        }
+      }
+
+      // Registra perimetro dell'ambito su Supabase per bloccare la sovrapposizione multiutente
+      const halfSize = (radiusCells * cellSize);
+      const bMin = proj4("EPSG:32632", "EPSG:4326", [centerUtm[0] - halfSize, centerUtm[1] - halfSize]);
+      const bMax = proj4("EPSG:32632", "EPSG:4326", [centerUtm[0] + halfSize, centerUtm[1] + halfSize]);
+
+      const bboxPoly = {
+        type: "Polygon",
+        coordinates: [[[bMin[0], bMin[1]], [bMax[0], bMin[1]], [bMax[0], bMax[1]], [bMin[0], bMax[1]], [bMin[0], bMin[1]]]]
+      };
+
+      dbClient.from('ambiti_progetto').insert([{
+        center_lon: centerLon,
+        center_lat: centerLat,
+        bbox: bboxPoly
+      }]).then(() => loadOccupiedZones());
+
       renderCells();
       updateMetrics();
-      document.getElementById('cell-info').innerText = `Territorio pronto (${cellsData.length} celle).`;
+      document.getElementById('cell-info').innerText = `Ambito pronto: ${cellsData.length} celle generate a 3x3 metri.`;
     }
 
     function buildGeoJSON() {
@@ -253,11 +353,12 @@
         features: cellsData.map(cell => {
           const x = parseFloat(cell.x_coord);
           const y = parseFloat(cell.y_coord);
+          const half = 1.5; // Metà cella 3m
 
-          const p1 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y - 2.5]);
-          const p2 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y - 2.5]);
-          const p3 = proj4("EPSG:32632", "EPSG:4326", [x + 2.5, y + 2.5]);
-          const p4 = proj4("EPSG:32632", "EPSG:4326", [x - 2.5, y + 2.5]);
+          const p1 = proj4("EPSG:32632", "EPSG:4326", [x - half, y - half]);
+          const p2 = proj4("EPSG:32632", "EPSG:4326", [x + half, y - half]);
+          const p3 = proj4("EPSG:32632", "EPSG:4326", [x + half, y + half]);
+          const p4 = proj4("EPSG:32632", "EPSG:4326", [x - half, y + half]);
 
           return {
             type: "Feature",
@@ -275,8 +376,24 @@
       };
     }
 
+    // Interrogazione del layer di uso del suolo reale (OSM Landuse)
+    function detectRealLandUse(features) {
+      for (const f of features) {
+        const lid = (f.layer.id || '').toLowerCase();
+        const src = (f.sourceLayer || '').toLowerCase();
+        const cls = (f.properties?.class || f.properties?.type || '').toLowerCase();
+
+        if (lid.includes('building') || src.includes('building')) return { type: 'building', label: 'Fabbricato Vincolato' };
+        if (cls.includes('farmland') || cls.includes('farm') || cls.includes('orchard')) return { type: 'agricolo', label: 'Zona Agricola / Seminativo' };
+        if (cls.includes('forest') || cls.includes('wood')) return { type: 'bosco_esistente', label: 'Bosco Naturale' };
+        if (cls.includes('grass') || cls.includes('meadow')) return { type: 'prato_incolto', label: 'Prato / Incolto' };
+        if (cls.includes('water') || lid.includes('water')) return { type: 'acqua', label: 'Corpo Idrico' };
+        if (cls.includes('industrial')) return { type: 'industriale', label: 'Zona Industriale' };
+      }
+      return { type: 'libero', label: 'Suolo Libero Non Classificato' };
+    }
+
     async function applyActionToCell(feature) {
-      if (!isProjectVisible) return;
       const cellId = feature.properties.id;
       if (lastModifiedCellId === cellId) return;
       lastModifiedCellId = cellId;
@@ -287,16 +404,13 @@
       const ys = screenPoints.map(p => p.y);
       const bbox = [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]];
 
-      const featuresInCell = map.queryRenderedFeatures(bbox);
-      const touchesBuilding = featuresInCell.some(f => {
-        if (f.layer.id === 'cells-layer') return false;
-        const lid = (f.layer.id || '').toLowerCase();
-        const slid = (f.sourceLayer || '').toLowerCase();
-        return lid.includes('building') || slid.includes('building');
-      });
+      const featuresInCell = map.queryRenderedFeatures(bbox).filter(f => f.layer.id !== 'cells-layer');
+      const realLand = detectRealLandUse(featuresInCell);
 
-      if (touchesBuilding && activeTool !== 'reset') {
-        document.getElementById('cell-info').innerHTML = `⚠️ <b>Cella ${cellId}</b>: Interseca un fabbricato.`;
+      document.getElementById('current-landuse-stat').innerText = realLand.label;
+
+      if (realLand.type === 'building' && activeTool !== 'reset') {
+        document.getElementById('cell-info').innerHTML = `⚠️ <b>Cella ${cellId}</b>: Fabbricato Vincolato! Modifica bloccata.`;
         return;
       }
 
@@ -304,7 +418,7 @@
       const newStatus = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
       const newScore = spec.score;
 
-      document.getElementById('cell-info').innerHTML = `<b>Cella:</b> ${cellId} | <b>Intervento:</b> ${spec.name}`;
+      document.getElementById('cell-info').innerHTML = `<b>Cella ${cellId}</b> | <b>Origine:</b> ${realLand.label} ➔ <b>Intervento:</b> ${spec.name}`;
 
       const target = cellsData.find(c => String(c.cell_id) === String(cellId));
       if (target) {
@@ -314,36 +428,12 @@
 
       map.getSource('cells-source').setData(buildGeoJSON());
       updateMetrics();
-
-      await dbClient.from('celle_territorio')
-        .update({ stato_progetto: newStatus, eco_score: newScore })
-        .eq('cell_id', cellId);
     }
 
     function renderCells() {
       if (!cellsData || cellsData.length === 0) return;
 
       const geojsonData = buildGeoJSON();
-
-      if (!initialZoomDone) {
-        let minLon = 180, maxLon = -180, minLat = 90, maxLat = -90;
-        geojsonData.features.forEach(f => {
-          const coords = f.geometry.coordinates[0];
-          coords.forEach(c => {
-            if (c[0] < minLon) minLon = c[0];
-            if (c[0] > maxLon) maxLon = c[0];
-            if (c[1] < minLat) minLat = c[1];
-            if (c[1] > maxLat) maxLat = c[1];
-          });
-        });
-
-        map.fitBounds([[minLon, minLat], [maxLon, maxLat]], {
-          padding: 60,
-          maxZoom: 18,
-          duration: 0
-        });
-        initialZoomDone = true;
-      }
 
       if (map.getSource('cells-source')) {
         map.getSource('cells-source').setData(geojsonData);
@@ -365,18 +455,12 @@
               'ciclabile', '#DDA15E',
               '#2b2b2b'
             ],
-            'fill-opacity': 0.65,
+            'fill-opacity': 0.62,
             'fill-outline-color': '#00ff88'
           }
         });
 
-        map.on('mouseenter', 'cells-layer', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'cells-layer', () => { map.getCanvas().style.cursor = ''; });
-
-        map.on('click', 'cells-layer', (e) => {
-          applyActionToCell(e.features[0]);
-        });
-
+        map.on('click', 'cells-layer', (e) => { applyActionToCell(e.features[0]); });
         map.on('mousemove', 'cells-layer', (e) => {
           if (isMouseDown && e.features && e.features.length > 0) {
             applyActionToCell(e.features[0]);
@@ -396,8 +480,9 @@
       let links = 0;
       forestKeys.forEach(k => {
         const [x, y] = k.split(',').map(Number);
-        if (forestKeys.has(`${x + 5},${y}`)) links++;
-        if (forestKeys.has(`${x},${y + 5}`)) links++;
+        // Distanza celle 3 metri
+        if (forestKeys.has(`${x + 3},${y}`)) links++;
+        if (forestKeys.has(`${x},${y + 3}`)) links++;
       });
       return links;
     }
@@ -408,8 +493,7 @@
       let transformedCells = 0;
       let permeableCells = 0;
       let totalCoolingImpact = 0;
-      const cellAreaM2 = 25;
-      const rainFallMm = 1000;
+      const cellAreaM2 = 9; // 3x3 metri
 
       cellsData.forEach(c => {
         baseScore += (c.eco_score || 0);
@@ -427,44 +511,24 @@
       });
 
       const corridorLinks = calculateConnectivity();
-      const bonusScore = corridorLinks * 5;
+      const bonusScore = corridorLinks * 3;
       const finalScore = baseScore + bonusScore;
-
-      // Raffrescamento medio ponderato sul comparto trasformato
       const deltaT = transformedCells > 0 ? (totalCoolingImpact / transformedCells).toFixed(1) : "0.0";
 
-      // Aggiornamento testate
-      document.getElementById('corridor-score').innerText = `Corridoi: ${corridorLinks} link (+${bonusScore} PT)`;
-      document.getElementById('total-score').innerText = `Bio-Punti: ${finalScore} PT`;
-      document.getElementById('total-cost').innerText = `Costo: ${totalCost.toLocaleString('it-IT')} €`;
-      document.getElementById('temp-score').innerText = `ΔT UHI: -${deltaT} °C`;
+      document.getElementById('corridor-score').innerText = `Corridoi: ${corridorLinks}`;
+      document.getElementById('total-score').innerText = `Bio: ${finalScore} PT`;
+      document.getElementById('total-cost').innerText = `${totalCost.toLocaleString('it-IT')} €`;
+      document.getElementById('temp-score').innerText = `ΔT: -${deltaT} °C`;
 
-      // Cruscotto Analitico
       const permRate = cellsData.length > 0 ? Math.round((permeableCells / cellsData.length) * 100) : 0;
       document.getElementById('perm-percent').innerText = `${permRate}%`;
       document.getElementById('perm-bar').style.width = `${permRate}%`;
       document.getElementById('transformed-area').innerText = `${(transformedCells * cellAreaM2).toLocaleString('it-IT')} m²`;
-      const waterVolume = Math.round((permeableCells * cellAreaM2 * (rainFallMm / 1000) * 0.8));
+      const waterVolume = Math.round((permeableCells * cellAreaM2 * 1.0 * 0.8));
       document.getElementById('infilt-volume').innerText = `${waterVolume.toLocaleString('it-IT')} m³/anno`;
-      document.getElementById('cooling-val').innerText = `-${deltaT} °C`;
     }
 
-    // Toggle Vista Progetto / Stato di Fatto (Prima/Dopo)
-    document.getElementById('toggle-compare-btn').addEventListener('click', () => {
-      isProjectVisible = !isProjectVisible;
-      const btn = document.getElementById('toggle-compare-btn');
-      if (isProjectVisible) {
-        btn.innerText = "👁️ Vista Progetto";
-        btn.classList.remove('active-toggle');
-        map.setLayoutProperty('cells-layer', 'visibility', 'visible');
-      } else {
-        btn.innerText = "⏮️ Stato di Fatto";
-        btn.classList.add('active-toggle');
-        map.setLayoutProperty('cells-layer', 'visibility', 'none');
-      }
-    });
-
-    // Basemap Satellite
+    // Satellite Multi-Zoom (Senza Scomparsa)
     document.getElementById('toggle-basemap-btn').addEventListener('click', () => {
       isSatellite = !isSatellite;
       const btn = document.getElementById('toggle-basemap-btn');
@@ -475,14 +539,17 @@
           map.addSource('esri-satellite', {
             type: 'raster',
             tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256
+            tileSize: 256,
+            maxzoom: 19 // Evita errori 404 a quote ravvicinate
           });
         }
         if (!map.getLayer('satellite-layer')) {
           map.addLayer({
             id: 'satellite-layer',
             type: 'raster',
-            source: 'esri-satellite'
+            source: 'esri-satellite',
+            minzoom: 0,
+            maxzoom: 22
           }, 'cells-layer');
         } else {
           map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
@@ -495,37 +562,19 @@
       }
     });
 
-    // Modale Concept
-    document.getElementById('info-modal-btn').addEventListener('click', () => {
-      document.getElementById('concept-modal').style.display = 'flex';
-    });
-
-    // Stampa Report Tecnico PDF
-    document.getElementById('print-pdf-btn').addEventListener('click', () => {
-      document.getElementById('report-date').innerText = new Date().toLocaleDateString('it-IT');
-      document.getElementById('rep-score').innerText = document.getElementById('total-score').innerText;
-      document.getElementById('rep-corridors').innerText = document.getElementById('corridor-score').innerText;
-      document.getElementById('rep-perm').innerText = document.getElementById('perm-percent').innerText;
-      document.getElementById('rep-water').innerText = document.getElementById('infilt-volume').innerText;
-      document.getElementById('rep-temp').innerText = document.getElementById('temp-score').innerText;
-      document.getElementById('rep-cost').innerText = document.getElementById('total-cost').innerText;
-      window.print();
-    });
-
-    // GeoJSON
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       const geojsonData = buildGeoJSON();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojsonData));
       const a = document.createElement('a');
       a.setAttribute("href", dataStr);
-      a.setAttribute("download", "progetto_openlandscape.geojson");
+      a.setAttribute("download", "progetto_openlandscape_3x3.geojson");
       document.body.appendChild(a);
       a.click();
       a.remove();
     });
 
     map.on('load', () => {
-      loadCells();
+      loadOccupiedZones();
     });
   </script>
 </body>
