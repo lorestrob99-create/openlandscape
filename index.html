@@ -2,94 +2,95 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - DSS Territoriale Esecutivo (1x1m)</title>
+  <title>OpenLandscape - DSS Esecutivo & Computo Regionale (1x1m)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <style>
     :root {
-      --bg-panel: rgba(15, 17, 21, 0.95);
+      --bg-panel: rgba(13, 16, 23, 0.96);
       --border-panel: rgba(255, 255, 255, 0.12);
       --accent: #52B788;
       --accent-dark: #2D6A4F;
     }
-    body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0c10; color: #eee; overflow: hidden; user-select: none; }
+    body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #07090e; color: #e6edf3; overflow: hidden; user-select: none; }
     #map { width: 100vw; height: 100vh; }
 
-    /* Barra Header */
+    /* Header */
     .header-bar {
       position: absolute; top: 10px; left: 10px; right: 10px;
       display: flex; justify-content: space-between; align-items: center;
-      background: var(--bg-panel); backdrop-filter: blur(12px);
+      background: var(--bg-panel); backdrop-filter: blur(14px);
       padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 30; gap: 8px; flex-wrap: wrap; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      z-index: 30; gap: 8px; flex-wrap: wrap; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
     }
     .title-group { display: flex; align-items: center; gap: 8px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
     .search-box { display: flex; gap: 6px; }
     .search-input {
-      background: #1c1e24; border: 1px solid #3d4251; color: #fff; padding: 6px 10px;
-      border-radius: 6px; font-size: 12px; width: 180px; outline: none;
+      background: #161b22; border: 1px solid #30363d; color: #fff; padding: 6px 10px;
+      border-radius: 6px; font-size: 12px; width: 170px; outline: none;
     }
     .btn {
       background: var(--accent-dark); border: none; color: #fff; padding: 6px 10px;
       border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s;
     }
     .btn:hover { filter: brightness(1.2); }
-    .btn-secondary { background: #2b303c; border: 1px solid #454d60; }
+    .btn-secondary { background: #21262d; border: 1px solid #363b42; }
 
-    .metrics-container { display: flex; gap: 6px; align-items: center; }
+    .metrics-container { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .metric-badge { background: #132a13; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #31572c; color: #ecf39e; }
     .cost-badge { background: #1a2238; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #3d5a80; color: #98c1d9; }
-    .corridor-badge { background: #2d1810; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #d97706; color: #fde68a; }
+    .budget-badge { background: #1f2d1f; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #40916c; color: #74c69d; }
+    .temp-badge { background: #3d1a10; padding: 5px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #9e2a2b; color: #fec5bb; }
 
     /* Toolbox Laterale */
     .toolbox {
       position: absolute; top: 68px; left: 10px;
-      background: var(--bg-panel); backdrop-filter: blur(12px);
+      background: var(--bg-panel); backdrop-filter: blur(14px);
       padding: 12px; border-radius: 8px; border: 1px solid var(--border-panel);
-      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 225px;
-      max-height: calc(100vh - 140px); overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      z-index: 25; display: flex; flex-direction: column; gap: 5px; width: 230px;
+      max-height: calc(100vh - 130px); overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.7);
     }
-    .toolbox label { font-size: 10px; text-transform: uppercase; color: #8892b0; letter-spacing: 0.8px; margin-top: 4px; }
+    .toolbox label { font-size: 10px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.8px; margin-top: 4px; }
+    
+    /* Pennello Raggio */
+    .brush-selector { display: flex; gap: 4px; margin-bottom: 2px; }
+    .brush-btn {
+      flex: 1; background: #161b22; border: 1px solid #30363d; color: #c9d1d9;
+      padding: 5px 0; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
+    }
+    .brush-btn.active { background: #2563eb; border-color: #60a5fa; color: #fff; }
+
     .tool-btn {
-      background: #181a20; border: 1px solid #313644; color: #eee; padding: 7px 9px;
+      background: #161b22; border: 1px solid #30363d; color: #c9d1d9; padding: 7px 9px;
       border-radius: 6px; text-align: left; cursor: pointer; font-size: 11px;
-      display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .tool-btn:hover { background: #232732; }
+    .tool-btn:hover { background: #21262d; }
     .tool-btn.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
 
-    /* Legenda Dettagliata Stato di Fatto */
     .legend-box {
-      margin-top: 4px; background: rgba(0,0,0,0.35); padding: 8px; border-radius: 6px; border: 1px solid #2d313d;
+      margin-top: 4px; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; border: 1px solid #30363d;
       font-size: 10px; display: flex; flex-direction: column; gap: 4px;
     }
     .legend-row { display: flex; align-items: center; gap: 6px; }
     .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
-    /* Target di Piano */
-    .target-box {
-      margin-top: 4px; background: rgba(0,0,0,0.35); padding: 6px; border-radius: 6px; border: 1px solid #2d313d;
-    }
-    .target-title { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
-    .target-bar-bg { background: #21242c; height: 5px; border-radius: 3px; overflow: hidden; }
-    .target-bar-fill { background: #52B788; height: 100%; width: 0%; transition: width 0.3s; }
-
-    /* Scheda Ispezione Cella (Tasto Destro) */
-    .inspect-modal {
-      position: absolute; top: 68px; right: 10px; width: 280px;
-      background: var(--bg-panel); backdrop-filter: blur(12px);
-      padding: 14px; border-radius: 8px; border: 1px solid var(--accent);
+    /* Modali Info */
+    .info-modal {
+      position: absolute; top: 68px; right: 10px; width: 330px;
+      background: var(--bg-panel); backdrop-filter: blur(14px);
+      padding: 14px; border-radius: 8px; border: 1px solid var(--border-panel);
       z-index: 35; display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+      max-height: 80vh; overflow-y: auto; font-size: 11px;
     }
-    .inspect-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .inspect-title { font-size: 12px; font-weight: 700; color: var(--accent); }
-    .inspect-close { cursor: pointer; color: #888; font-size: 14px; }
-    .inspect-row { font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 3px; }
-    .inspect-row span:first-child { color: #8892b0; }
+    .info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; }
+    .info-title { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .info-close { cursor: pointer; color: #888; font-size: 14px; }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,0.04); }
 
     #cell-info {
       position: absolute; bottom: 14px; left: 10px;
@@ -97,92 +98,120 @@
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
-    /* Ottimizzazione Mobile: Bottom Sheet */
     @media (max-width: 768px) {
       .header-bar { top: 0; left: 0; right: 0; border-radius: 0; }
-      .search-box { width: 100%; }
-      .search-input { flex: 1; }
-      .toolbox {
-        top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 45vh;
-        border-radius: 16px 16px 0 0; box-sizing: border-box;
-      }
-      .inspect-modal { right: 10px; left: 10px; width: auto; top: 110px; }
+      .toolbox { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 45vh; border-radius: 16px 16px 0 0; }
+      .info-modal { right: 10px; left: 10px; width: auto; top: 110px; }
       #cell-info { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- Header Bar -->
   <div class="header-bar">
     <div class="title-group">
       <div class="title">OpenLandscape</div>
       <div class="search-box">
-        <input type="text" id="address-input" class="search-input" placeholder="Comune, via o coordinate..." />
+        <input type="text" id="address-input" class="search-input" placeholder="Comune, via o piazza..." />
         <button class="btn" id="address-search-btn">Vai</button>
       </div>
     </div>
 
     <div class="metrics-container">
-      <div class="corridor-badge" id="corridor-score">Corridoi: 0 link</div>
-      <div class="cost-badge" id="total-cost">Costo: 0 €</div>
+      <div class="budget-badge" id="budget-left-score">Residuo: 150.000 €</div>
+      <div class="cost-badge" id="total-cost">Spesa: 0 €</div>
+      <div class="temp-badge" id="temp-score">ΔT UHI: 0.0 °C</div>
+      <div class="metric-badge" id="corridor-score">Corridoi: 0 link</div>
       <div class="metric-badge" id="total-score">Bio: 0 PT</div>
       <button class="btn btn-secondary" id="new-grid-btn">📍 Ambito 100x100m</button>
       <button class="btn btn-secondary" id="toggle-basemap-btn">🛰️ Satellite</button>
+      <button class="btn btn-secondary" onclick="openPriceModal()">📋 Prezzario</button>
+      <button class="btn btn-secondary" onclick="openEcoModal()">🌿 Criteri Bio</button>
     </div>
   </div>
 
   <!-- Toolbox Laterale -->
   <div class="toolbox">
-    <div style="font-size: 10px; color: #aaa; display: flex; justify-content: space-between;">
-      <span>Scala: <b>1x1m (1 m²)</b></span>
-      <span style="color:#52B788;">Dx = Ispezione</span>
+    <label>Raggio Pennello</label>
+    <div class="brush-selector">
+      <div class="brush-btn active" data-brush="1">1x1 (1 cella)</div>
+      <div class="brush-btn" data-brush="3">3x3 (9 celle)</div>
+      <div class="brush-btn" data-brush="5">5x5 (25 celle)</div>
     </div>
 
     <label>Interventi di Progetto</label>
-    <button class="tool-btn active" data-action="bosco">🌲 Bosco Polifita <span>+12</span></button>
-    <button class="tool-btn" data-action="umida">💧 Bacino / Zona Umida <span>+15</span></button>
-    <button class="tool-btn" data-action="ripariale">🌿 Fascia Riparia <span>+10</span></button>
-    <button class="tool-btn" data-action="prato">🌸 Prato Fiorito <span>+8</span></button>
-    <button class="tool-btn" data-action="depav">🧱 De-pavimentazione <span>+18</span></button>
+    <button class="tool-btn active" data-action="bosco">🌲 Bosco Polifita Autoctono <span>+12</span></button>
+    <button class="tool-btn" data-action="umida">💧 Bacino / Area Umida <span>+15</span></button>
+    <button class="tool-btn" data-action="ripariale">🌿 Fascia Tampone Riparia <span>+10</span></button>
+    <button class="tool-btn" data-action="prato">🌸 Prato Fiorito Impollinatori <span>+8</span></button>
+    <button class="tool-btn" data-action="depav">🧱 De-pavimentazione Drenante <span>+18</span></button>
     <button class="tool-btn" data-action="ciclabile">🚲 Pista Ciclabile <span>+5</span></button>
-    <button class="tool-btn" data-action="reset">🔄 Ripristina Stato Fatto</button>
+    <button class="tool-btn" data-action="reset">🔄 Ripristina Stato di Fatto</button>
 
-    <label>Stato di Fatto (Tassonomia)</label>
+    <label>Stato di Fatto (Tassonomia Esatta)</label>
     <div class="legend-box">
-      <div class="legend-row"><div class="legend-color" style="background:#2d5a27;"></div><span>Bosco Naturale Esistente</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#9c824a;"></div><span>Seminativo / Coltivo</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#b08968;"></div><span>Vigneto / Frutteto</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#52796f;"></div><span>Prato Stabile / Pascolo</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#2b5876;"></div><span>Ambito Fluviale / Umido</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#3d405b;"></div><span>Sede Stradale / Asfalto</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#6c757d;"></div><span>Piazzale Impermeabile</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#2d5a27;"></div><span>Bosco Naturale Autoctono</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#40916c;"></div><span>Verde Pubblico / Parco Urbano</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#74c69d;"></div><span>Verde Privato / Giardino Pertinenziale</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#e76f51;"></div><span>Pista Ciclabile / Percorso Ciclo-Pedonale</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#6c757d;"></div><span>Parcheggio / Piazzale Sosta</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#3d405b;"></div><span>Sede Stradale Asfaltata</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#9c824a;"></div><span>Coltivo / Seminativo Agrario</span></div>
       <div class="legend-row"><div class="legend-color" style="background:#a4161a;"></div><span>Fabbricato Vincolato</span></div>
-    </div>
-
-    <label>Target di Piano (1 Ha)</label>
-    <div class="target-box">
-      <div class="target-title"><span>Copertura Forestale (30% = 3.000 m²)</span><span id="target-forest-val">0%</span></div>
-      <div class="target-bar-bg"><div class="target-bar-fill" id="target-forest-bar"></div></div>
     </div>
 
     <button class="btn" id="export-geojson-btn" style="margin-top: 6px; width: 100%;">📥 Salva per QGIS</button>
   </div>
 
-  <!-- Scheda Ispezione Cella (Tasto Destro) -->
-  <div class="inspect-modal" id="inspect-modal">
-    <div class="inspect-header">
-      <span class="inspect-title" id="inspect-cell-id">Cella #--- (1x1m)</span>
-      <span class="inspect-close" onclick="closeInspectModal()">✕</span>
+  <!-- Modale Ispezione Singola Cella (Tasto Destro) -->
+  <div class="info-modal" id="inspect-modal">
+    <div class="info-header">
+      <span class="info-title" id="inspect-cell-id">Cella #---</span>
+      <span class="info-close" onclick="closeInspectModal()">✕</span>
     </div>
-    <div class="inspect-row"><span>Stato di Fatto:</span><b id="inspect-pre">-</b></div>
-    <div class="inspect-row"><span>Stato di Progetto:</span><b id="inspect-post" style="color:var(--accent);">-</b></div>
-    <div class="inspect-row"><span>Costo Trasformazione:</span><b id="inspect-cost" style="color:#98c1d9;">-</b></div>
-    <div class="inspect-row"><span>Variazione Bio-Punti:</span><span id="inspect-points">-</span></div>
-    <div class="inspect-row"><span>Rete Ecologica:</span><span id="inspect-corridor">-</span></div>
+    <div class="info-row"><span>Stato di Fatto:</span><b id="inspect-pre">-</b></div>
+    <div class="info-row"><span>Stato di Progetto:</span><b id="inspect-post" style="color:var(--accent);">-</b></div>
+    <div class="info-row"><span>Costo Trasformazione:</span><b id="inspect-cost" style="color:#98c1d9;">-</b></div>
+    <div class="info-row"><span>Punteggio Biodiversità:</span><span id="inspect-points">-</span></div>
+    <div class="info-row"><span>Rete Ecologica:</span><span id="inspect-corridor">-</span></div>
   </div>
 
-  <div id="cell-info">Clicca 'Ambito 100x100m' e posiziona il baricentro per iniziare il campionamento.</div>
+  <!-- Modale Prezzario Esecutivo Opere -->
+  <div class="info-modal" id="price-modal">
+    <div class="info-header">
+      <span class="info-title">Prezzario Opere a Verde & Ingegneria (Regione Piemonte)</span>
+      <span class="info-close" onclick="document.getElementById('price-modal').style.display='none'">✕</span>
+    </div>
+    <p style="color:#8b949e; line-height: 1.4;">Tariffe calcolate considerando la voce d'opera reale (demolizione, cassonetto, scavo, fornitura essenze forestali):</p>
+    <div class="info-row"><span>Strada / Asfalto ➔ Bosco:</span><b>92.00 €/m²</b></div>
+    <div style="font-size: 9px; color:#888; margin-bottom: 4px;">(Scarifica binder/usura + scavo cassonetto + trasporto a discarica + riporto terra fertile + alberature in zolla)</div>
+    <div class="info-row"><span>Parcheggio / Piazzale ➔ Bosco:</span><b>68.00 €/m²</b></div>
+    <div class="info-row"><span>Verde Privato / Incolto ➔ Bosco:</span><b>16.00 €/m²</b></div>
+    <div style="font-size: 9px; color:#888; margin-bottom: 4px;">(Scavo buca + essenza forestale autoctona 2-3 anni + tutori in castagno + pacciamatura)</div>
+    <div class="info-row"><span>Seminativo ➔ Prato Fiorito:</span><b>4.50 €/m²</b></div>
+    <div style="font-size: 9px; color:#888; margin-bottom: 4px;">(Erpicatura superficiale + idrosemina miscuglio autoctono da fiore)</div>
+    <div class="info-row"><span>Strada ➔ Ciclabile Ecologica:</span><b>28.00 €/m²</b></div>
+    <div class="info-row"><span>Verde Privato ➔ Ciclabile:</span><b>48.00 €/m²</b></div>
+    <div class="info-row"><span>De-pavimentazione suolo impermeabile:</span><b>45.00 €/m²</b></div>
+  </div>
+
+  <!-- Modale Criteri Ecologici & UHI -->
+  <div class="info-modal" id="eco-modal">
+    <div class="info-header">
+      <span class="info-title">Criteri Bio-Punti, Rete & Mitigazione Termica</span>
+      <span class="info-close" onclick="document.getElementById('eco-modal').style.display='none'">✕</span>
+    </div>
+    <p style="color:#8b949e; line-height: 1.4;">Indicatori calcolati in base alla capacità dei biotopi e all'invarianza idro-microclimatica:</p>
+    <div class="info-row"><span>Bosco Polifita Autoctono:</span><b>+12 PT | Evapotraspirazione Alta (ΔT: -2.8 °C)</b></div>
+    <div class="info-row"><span>Bacino / Zona Umida:</span><b>+15 PT | Raffrescamento radiativo max (ΔT: -3.4 °C)</b></div>
+    <div class="info-row"><span>Fascia Tampone Riparia:</span><b>+10 PT | Fitodepurazione + Corridoio Fluviale</b></div>
+    <div class="info-row"><span>Prato Fiorito per Impollinatori:</span><b>+8 PT | Tappeto erboso mellifero</b></div>
+    <div class="info-row"><span>De-pavimentazione Drenante:</span><b>+18 PT | Zero consumo di suolo + invarianza</b></div>
+    <div class="info-row"><span>Bonus Rete / Corridoio Ecologico:</span><b>+2 PT a link continuo (bosco nuovo + esistente)</b></div>
+  </div>
+
+  <div id="cell-info">Clicca 'Ambito 100x100m' per fissare il comprensorio da 1 ettaro.</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -190,98 +219,116 @@
   <script>
     proj4.defs("EPSG:32632", "+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs");
 
-    // Metadati e classi estese d'uso del suolo reale
+    const SUPABASE_URL = "https://cpcocfjzbgiunhvphwwo.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_ATgwPpdPd-OGDmRCo4Gpng_3P5u-j5H";
+    const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const START_BUDGET = 150000; // Budget di piano stanziato
+
+    // Tassonomia reale e metadati
     const LANDUSE_META = {
-      seminativo: { name: 'Seminativo / Coltivo Intensivo', baseScore: 0, color: '#9c824a' },
-      vigneto_frutteto: { name: 'Vigneto / Frutteto Specializzato', baseScore: 2, color: '#b08968' },
-      prato_stabile: { name: 'Prato Stabile / Pascolo', baseScore: 4, color: '#52796f' },
-      bosco_naturale: { name: 'Bosco Naturale Esistente', baseScore: 12, color: '#2d5a27' },
-      idrico_ripariale: { name: 'Ambito Fluviale / Zona Umida', baseScore: 14, color: '#2b5876' },
-      strada_asfalto: { name: 'Sede Stradale / Asfalto Viario', baseScore: 0, color: '#3d405b' },
-      piazzale_impermeabile: { name: 'Piazzale / Parcheggio Impermeabile', baseScore: 0, color: '#6c757d' },
-      fabbricato: { name: 'Fabbricato / Sedime Edilizio', baseScore: 0, color: '#a4161a' }
+      bosco_naturale: { name: 'Bosco Naturale Autoctono', baseScore: 12, cooling: 2.8, color: '#2d5a27' },
+      verde_pubblico: { name: 'Verde Pubblico / Parco Urbano', baseScore: 8, cooling: 2.0, color: '#40916c' },
+      verde_privato: { name: 'Verde Privato / Giardino', baseScore: 6, cooling: 1.5, color: '#74c69d' },
+      ciclabile_esist: { name: 'Pista Ciclabile / Percorso Ciclo-Pedonale', baseScore: 4, cooling: 0.2, color: '#e76f51' },
+      parcheggio: { name: 'Parcheggio / Piazzale Impermeabile', baseScore: 0, cooling: -1.5, color: '#6c757d' },
+      strada_asfalto: { name: 'Sede Stradale Asfaltata', baseScore: 0, cooling: -2.0, color: '#3d405b' },
+      seminativo: { name: 'Coltivo / Seminativo Agrario', baseScore: 2, cooling: 0.5, color: '#9c824a' },
+      fabbricato: { name: 'Fabbricato Vincolato', baseScore: 0, cooling: -2.5, color: '#a4161a' }
     };
 
-    // Matrice Costi Differenziali Esecutivi (€/m²)
+    // Matrice Costi Esecutivi Differenziali (€/m²) conformi ai prezzari regionali piemontesi
     const COST_MATRIX = {
       bosco: {
-        strada_asfalto: 85,          // Scarifica asfalto, scavo, terra agraria, sesto d'impianto
-        piazzale_impermeabile: 70,   // De-impermeabilizzazione, sottofondo, piantumazione
-        vigneto_frutteto: 24,        // Espianto ceppaie, rippatura, messa a dimora alberi
-        seminativo: 14,              // Lavorazione terreno e piantumazione essenze
-        prato_stabile: 16,           // Buche d'impianto, pacciamatura, alberi
-        idrico_ripariale: 18,        // Riconversione idraulico-forestale
-        bosco_naturale: 0,           // Già boscato
+        strada_asfalto: 92,
+        parcheggio: 68,
+        verde_privato: 16,
+        verde_pubblico: 12,
+        seminativo: 14,
+        ciclabile_esist: 75,
+        bosco_naturale: 0,
         fabbricato: 0
       },
       umida: {
-        strada_asfalto: 110,
-        piazzale_impermeabile: 95,
-        vigneto_frutteto: 38,
+        strada_asfalto: 115,
+        parcheggio: 95,
+        verde_privato: 32,
+        verde_pubblico: 26,
         seminativo: 28,
-        prato_stabile: 30,
-        idrico_ripariale: 12,
+        ciclabile_esist: 90,
         bosco_naturale: 45,
         fabbricato: 0
       },
       ripariale: {
-        strada_asfalto: 80,
-        piazzale_impermeabile: 65,
-        vigneto_frutteto: 22,
+        strada_asfalto: 85,
+        parcheggio: 65,
+        verde_privato: 15,
+        verde_pubblico: 12,
         seminativo: 16,
-        prato_stabile: 14,
-        idrico_ripariale: 8,
+        ciclabile_esist: 70,
         bosco_naturale: 0,
         fabbricato: 0
       },
       prato: {
-        strada_asfalto: 60,
-        piazzale_impermeabile: 50,
-        vigneto_frutteto: 15,
-        seminativo: 6,
-        prato_stabile: 3,
-        idrico_ripariale: 10,
-        bosco_naturale: 20,
+        strada_asfalto: 62,
+        parcheggio: 48,
+        verde_privato: 6,
+        verde_pubblico: 4,
+        seminativo: 4.5,
+        ciclabile_esist: 45,
+        bosco_naturale: 18,
         fabbricato: 0
       },
       depav: {
-        strada_asfalto: 50,
-        piazzale_impermeabile: 42,
-        vigneto_frutteto: 0,
+        strada_asfalto: 45,
+        parcheggio: 40,
+        verde_privato: 0,
+        verde_pubblico: 0,
         seminativo: 0,
-        prato_stabile: 0,
-        idrico_ripariale: 0,
+        ciclabile_esist: 0,
         bosco_naturale: 0,
         fabbricato: 0
       },
       ciclabile: {
-        strada_asfalto: 25,
-        piazzale_impermeabile: 30,
-        vigneto_frutteto: 48,
-        seminativo: 42,
-        prato_stabile: 40,
-        idrico_ripariale: 55,
-        bosco_naturale: 60,
+        strada_asfalto: 28,
+        parcheggio: 32,
+        verde_privato: 48,
+        verde_pubblico: 42,
+        seminativo: 44,
+        ciclabile_esist: 0,
+        bosco_naturale: 65,
         fabbricato: 0
       }
     };
 
     const TOOL_SPECS = {
-      bosco: { score: 12, name: 'Bosco Polifita Autoctono' },
-      umida: { score: 15, name: 'Bacino / Zona Umida' },
-      ripariale: { score: 10, name: 'Fascia Tampone Riparia' },
-      prato: { score: 8, name: 'Prato Fiorito Impollinatori' },
-      depav: { score: 18, name: 'De-pavimentazione Drenante' },
-      ciclabile: { score: 5, name: 'Pista Ciclabile Ecologica' },
-      reset: { score: 0, name: 'Stato di Fatto' }
+      bosco: { score: 12, cooling: 2.8, name: 'Bosco Polifita Autoctono' },
+      umida: { score: 15, cooling: 3.4, name: 'Bacino / Area Umida' },
+      ripariale: { score: 10, cooling: 2.2, name: 'Fascia Tampone Riparia' },
+      prato: { score: 8, cooling: 1.2, name: 'Prato Fiorito Impollinatori' },
+      depav: { score: 18, cooling: 1.8, name: 'De-pavimentazione Drenante' },
+      ciclabile: { score: 5, cooling: 0.2, name: 'Pista Ciclabile' },
+      reset: { score: 0, cooling: 0.0, name: 'Stato di Fatto' }
     };
 
     let activeTool = "bosco";
+    let brushRadius = 1; // 1=1x1, 3=3x3, 5=5x5
     let cellsData = [];
     let isMouseDown = false;
     let isPinMode = false;
     let isSatellite = false;
     let selectedCellId = null;
+    let occupiedZones = [];
+    let currentGridId = null;
+
+    // Selettore Pennello Dimensione
+    document.querySelectorAll('.brush-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        brushRadius = parseInt(btn.dataset.brush);
+      });
+    });
 
     document.querySelectorAll('.tool-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -299,14 +346,14 @@
       maxZoom: 22
     });
 
-    // Disegno continuo con trascinamento del mouse
+    // Disegno Continuo con Pennello a Più Celle
     map.on('mousedown', (e) => {
       if (e.originalEvent.button === 0) {
         const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill'] });
         if (feats.length > 0) {
           isMouseDown = true;
           map.dragPan.disable();
-          applyActionToCell(feats[0]);
+          applyBrushAction(feats[0]);
         }
       }
     });
@@ -316,64 +363,131 @@
       map.dragPan.enable();
     });
 
-    // Geocoding Nominatim
+    // Ricerca Geografica
     document.getElementById('address-search-btn').addEventListener('click', async () => {
       const q = document.getElementById('address-input').value.trim();
       if (!q) return;
-      document.getElementById('cell-info').innerText = `Ricerca in corso: ${q}...`;
+      document.getElementById('cell-info').innerText = `Ricerca: ${q}...`;
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (data && data.length > 0) {
         map.flyTo({ center: [parseFloat(data[0].lon), parseFloat(data[0].lat)], zoom: 17.5 });
-        document.getElementById('cell-info').innerText = `Località inquadrata: ${data[0].display_name}`;
+        document.getElementById('cell-info').innerText = `Inquadrata: ${data[0].display_name}`;
       }
     });
 
-    // Fissaggio Ambito di Progetto
+    // Carica Ambiti già presi da altri utenti in Supabase
+    async function loadOccupiedZones() {
+      const { data } = await dbClient.from('ambiti_progetto').select('*');
+      if (data) {
+        occupiedZones = data;
+        renderOccupiedBorders();
+      }
+    }
+
+    function renderOccupiedBorders() {
+      const features = occupiedZones.map(a => ({
+        type: "Feature",
+        properties: { id: a.id, name: a.nome_progetto || 'Ambito Riservato' },
+        geometry: a.bbox
+      }));
+
+      const geojson = { type: "FeatureCollection", features };
+
+      if (!map.getSource('occupied-source')) {
+        map.addSource('occupied-source', { type: 'geojson', data: geojson });
+        map.addLayer({
+          id: 'occupied-layer',
+          type: 'line',
+          source: 'occupied-source',
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 2.5,
+            'line-dasharray': [3, 2]
+          }
+        });
+      } else {
+        map.getSource('occupied-source').setData(geojson);
+      }
+    }
+
+    // Modalità Fissaggio Ambito 100x100m
     document.getElementById('new-grid-btn').addEventListener('click', () => {
       isPinMode = true;
-      document.getElementById('cell-info').innerText = "Clicca per posizionare il baricentro dell'ambito (100x100m, 10.000 celle 1x1m).";
+      document.getElementById('cell-info').innerText = "Clicca per fissare il centro del tuo ambito 100x100m (1 ettaro).";
       map.getCanvas().style.cursor = 'crosshair';
     });
 
-    map.on('click', (e) => {
+    map.on('click', async (e) => {
       if (isPinMode) {
+        const cLon = e.lngLat.lng;
+        const cLat = e.lngLat.lat;
+
+        // Verifica se si sovrappone ad ambiti già presi
+        const isConflict = occupiedZones.some(amb => {
+          const dX = Math.abs(amb.center_lon - cLon);
+          const dY = Math.abs(amb.center_lat - cLat);
+          return dX < 0.0012 && dY < 0.0012; // ~100 metri
+        });
+
+        if (isConflict) {
+          alert("Attenzione: Quest'area è già stata riservata da un altro utente! Scegli un'area libera.");
+          return;
+        }
+
         isPinMode = false;
         map.getCanvas().style.cursor = '';
-        generateGrid1x1(e.lngLat.lng, e.lngLat.lat);
+        generateGrid1x1(cLon, cLat);
       }
     });
 
-    // Tasto Destro: Ispezione Scheda Dettaglio Pre vs Post
     map.on('contextmenu', (e) => {
       e.preventDefault();
       const feats = map.queryRenderedFeatures(e.point, { layers: ['cells-layer-fill'] });
       if (feats.length > 0) openInspectModal(feats[0]);
     });
 
-    // Campionamento puntuale uso suolo OSM
+    // CAMPIONAMENTO PRECISO DELL'USO DEL SUOLO REALE
     function detectLandUseClass(lon, lat) {
       const point = map.project([lon, lat]);
-      const bbox = [[point.x - 2, point.y - 2], [point.x + 2, point.y + 2]];
+      const bbox = [[point.x - 3, point.y - 3], [point.x + 3, point.y + 3]];
       const feats = map.queryRenderedFeatures(bbox).filter(f => !f.layer.id.startsWith('cells-'));
 
       for (const f of feats) {
         const lid = (f.layer.id || '').toLowerCase();
-        const cls = (f.properties?.class || f.properties?.type || '').toLowerCase();
+        const src = (f.sourceLayer || '').toLowerCase();
+        const cls = (f.properties?.class || f.properties?.type || f.properties?.leisure || f.properties?.highway || '').toLowerCase();
 
-        if (lid.includes('building') || cls.includes('building')) return 'fabbricato';
-        if (cls.includes('forest') || cls.includes('wood')) return 'bosco_naturale';
-        if (cls.includes('water') || lid.includes('water') || cls.includes('river') || cls.includes('wetland')) return 'idrico_ripariale';
-        if (lid.includes('road') || cls.includes('highway') || cls.includes('motorway')) return 'strada_asfalto';
-        if (cls.includes('parking') || cls.includes('industrial') || cls.includes('commercial')) return 'piazzale_impermeabile';
-        if (cls.includes('vineyard') || cls.includes('orchard')) return 'vigneto_frutteto';
-        if (cls.includes('meadow') || cls.includes('grass') || cls.includes('pasture')) return 'prato_stabile';
+        // 1. Fabbricati
+        if (lid.includes('building') || src.includes('building')) return 'fabbricato';
+
+        // 2. Piste ciclabili e percorsi ciclo-pedonali esatti
+        if (cls === 'cycleway' || cls === 'bicycle' || cls === 'footway' || cls === 'path' || lid.includes('cycleway')) return 'ciclabile_esist';
+
+        // 3. Parcheggi e aree di sosta
+        if (cls === 'parking' || cls.includes('parking') || lid.includes('parking')) return 'parcheggio';
+
+        // 4. Boschi naturali autoctoni
+        if (cls.includes('forest') || cls.includes('wood') || lid.includes('wood')) return 'bosco_naturale';
+
+        // 5. Verde Pubblico / Parchi urbani
+        if (cls.includes('park') || cls.includes('village_green') || cls.includes('recreation_ground') || lid.includes('park')) return 'verde_pubblico';
+
+        // 6. Verde Privato / Giardino residenziale
+        if (cls.includes('garden') || cls.includes('residential') || lid.includes('residential')) return 'verde_privato';
+
+        // 7. Sede Stradale veicolare asfaltata
+        if (lid.includes('road') || cls.includes('motorway') || cls.includes('primary') || cls.includes('secondary') || cls.includes('tertiary') || cls.includes('residential')) {
+          return 'strada_asfalto';
+        }
       }
+
+      // Se non ricade in nessuna classe urbana, è coltivo/seminativo
       return 'seminativo';
     }
 
-    function generateGrid1x1(centerLon, centerLat) {
-      document.getElementById('cell-info').innerText = "Campionamento uso del suolo e generazione 10.000 celle da 1x1m...";
+    async function generateGrid1x1(centerLon, centerLat) {
+      document.getElementById('cell-info').innerText = "Campionamento uso reale del suolo su 10.000 micro-celle...";
       const centerUtm = proj4("EPSG:4326", "EPSG:32632", [centerLon, centerLat]);
       const cellSize = 1.0;
       const countSide = 100;
@@ -393,6 +507,8 @@
 
           cellsData.push({
             cell_id: id++,
+            row: r,
+            col: c,
             x_coord: x,
             y_coord: y,
             stato_fatto: baseUse,
@@ -402,9 +518,26 @@
         }
       }
 
+      // Registra ambito su Supabase per bloccare gli altri utenti
+      const bMin = proj4("EPSG:32632", "EPSG:4326", [centerUtm[0] - half, centerUtm[1] - half]);
+      const bMax = proj4("EPSG:32632", "EPSG:4326", [centerUtm[0] + half, centerUtm[1] + half]);
+      const bboxPoly = {
+        type: "Polygon",
+        coordinates: [[[bMin[0], bMin[1]], [bMax[0], bMin[1]], [bMax[0], bMax[1]], [bMin[0], bMax[1]], [bMin[0], bMin[1]]]]
+      };
+
+      const { data } = await dbClient.from('ambiti_progetto').insert([{
+        center_lon: centerLon,
+        center_lat: centerLat,
+        bbox: bboxPoly
+      }]).select();
+
+      if (data && data.length > 0) currentGridId = data[0].id;
+      loadOccupiedZones();
+
       renderCells();
       updateMetrics();
-      document.getElementById('cell-info').innerText = `Reticolo 1x1m generato con successo (10.000 celle su 1 ettaro).`;
+      document.getElementById('cell-info').innerText = `Ambito pronto: 10.000 celle 1x1m. Seleziona il raggio del pennello e dipingi.`;
     }
 
     function buildGeoJSON() {
@@ -421,6 +554,8 @@
             type: "Feature",
             properties: {
               id: c.cell_id,
+              row: c.row,
+              col: c.col,
               stato_fatto: c.stato_fatto,
               stato: c.stato_progetto || 'stato_di_fatto',
               selected: c.cell_id === selectedCellId ? 1 : 0
@@ -454,23 +589,23 @@
                 'ripariale', '#40916C',
                 'prato', '#B5E48C',
                 'depav', '#52B788',
-                'ciclabile', '#E76F51',
+                'ciclabile', '#F4A261',
                 '#333333'
               ],
               [
                 'match', ['get', 'stato_fatto'],
                 'bosco_naturale', '#2d5a27',
-                'seminativo', '#9c824a',
-                'vigneto_frutteto', '#b08968',
-                'prato_stabile', '#52796f',
-                'idrico_ripariale', '#2b5876',
+                'verde_pubblico', '#40916c',
+                'verde_privato', '#74c69d',
+                'ciclabile_esist', '#e76f51',
+                'parcheggio', '#6c757d',
                 'strada_asfalto', '#3d405b',
-                'piazzale_impermeabile', '#6c757d',
+                'seminativo', '#9c824a',
                 'fabbricato', '#a4161a',
                 '#2c3e50'
               ]
             ],
-            'fill-opacity': 0.75
+            'fill-opacity': 0.76
           }
         });
 
@@ -480,8 +615,8 @@
           source: 'cells-source',
           paint: {
             'line-color': '#00ff88',
-            'line-width': 0.3,
-            'line-opacity': 0.25
+            'line-width': 0.2,
+            'line-opacity': 0.2
           }
         });
 
@@ -501,8 +636,8 @@
           if (e.features && e.features.length > 0) {
             const f = e.features[0];
             const meta = LANDUSE_META[f.properties.stato_fatto] || { name: f.properties.stato_fatto };
-            document.getElementById('cell-info').innerHTML = `🔍 <b>Cella #${f.properties.id}</b> | Stato di Fatto: <b>${meta.name}</b> | Progetto: <b>${f.properties.stato}</b>`;
-            if (isMouseDown) applyActionToCell(f);
+            document.getElementById('cell-info').innerHTML = `🔍 <b>Cella #${f.properties.id}</b> | Uso Reale: <b>${meta.name}</b> | Progetto: <b>${f.properties.stato}</b>`;
+            if (isMouseDown) applyBrushAction(f);
           }
         });
       } else {
@@ -510,75 +645,89 @@
       }
     }
 
-    function applyActionToCell(feature) {
-      const cellId = feature.properties.id;
-      const target = cellsData.find(c => c.cell_id === cellId);
-      if (!target) return;
+    // Applicazione Azione con Raggio Dinamico (1x1, 3x3, 5x5)
+    function applyBrushAction(centerFeature) {
+      const centerRow = centerFeature.properties.row;
+      const centerCol = centerFeature.properties.col;
+      const offset = Math.floor(brushRadius / 2);
 
-      if (target.stato_fatto === 'fabbricato' && activeTool !== 'reset') {
-        document.getElementById('cell-info').innerHTML = `⚠️ <b>Cella #${cellId}</b>: Fabbricato vincolato! Azione bloccata.`;
-        return;
+      let modified = false;
+
+      for (let r = centerRow - offset; r <= centerRow + offset; r++) {
+        for (let c = centerCol - offset; c <= centerCol + offset; c++) {
+          const target = cellsData.find(cell => cell.row === r && cell.col === c);
+          if (target) {
+            if (target.stato_fatto === 'fabbricato' && activeTool !== 'reset') continue;
+
+            const spec = TOOL_SPECS[activeTool];
+            target.stato_progetto = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
+
+            if (activeTool === 'reset') {
+              const meta = LANDUSE_META[target.stato_fatto] || { baseScore: 0 };
+              target.eco_score = meta.baseScore;
+            } else {
+              target.eco_score = spec.score;
+            }
+            modified = true;
+          }
+        }
       }
 
-      const spec = TOOL_SPECS[activeTool];
-      target.stato_progetto = activeTool === 'reset' ? 'stato_di_fatto' : activeTool;
-
-      if (activeTool === 'reset') {
-        const meta = LANDUSE_META[target.stato_fatto] || { baseScore: 0 };
-        target.eco_score = meta.baseScore;
-      } else {
-        target.eco_score = spec.score;
+      if (modified) {
+        map.getSource('cells-source').setData(buildGeoJSON());
+        updateMetrics();
       }
-
-      map.getSource('cells-source').setData(buildGeoJSON());
-      updateMetrics();
     }
 
+    // Calcolo Connettività Corridoi (Nuovo Bosco + Bosco Autoctono Esistente)
     function calculateCorridors() {
       const forestKeys = new Set();
       cellsData.forEach(c => {
         const isForest = (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale' || (c.stato_progetto === 'stato_di_fatto' && c.stato_fatto === 'bosco_naturale'));
-        if (isForest) forestKeys.add(`${Math.round(c.x_coord)},${Math.round(c.y_coord)}`);
+        if (isForest) forestKeys.add(`${c.row},${c.col}`);
       });
 
       let links = 0;
       forestKeys.forEach(k => {
-        const [x, y] = k.split(',').map(Number);
-        if (forestKeys.has(`${x + 1},${y}`)) links++;
-        if (forestKeys.has(`${x},${y + 1}`)) links++;
+        const [r, c] = k.split(',').map(Number);
+        if (forestKeys.has(`${r + 1},${c}`)) links++;
+        if (forestKeys.has(`${r},${c + 1}`)) links++;
       });
       return links;
     }
 
     function updateMetrics() {
-      let score = 0, totalCost = 0, totalForestM2 = 0;
+      let score = 0, totalCost = 0, totalCooling = 0, transformedCells = 0;
 
       cellsData.forEach(c => {
         score += (c.eco_score || 0);
 
         if (c.stato_progetto && c.stato_progetto !== 'stato_di_fatto') {
+          transformedCells++;
           const matrix = COST_MATRIX[c.stato_progetto];
           if (matrix) {
             const unitCost = matrix[c.stato_fatto] !== undefined ? matrix[c.stato_fatto] : 20;
             totalCost += unitCost;
           }
+          const spec = TOOL_SPECS[c.stato_progetto];
+          if (spec) totalCooling += spec.cooling;
         }
-
-        const isForest = (c.stato_progetto === 'bosco' || c.stato_progetto === 'ripariale' || (c.stato_progetto === 'stato_di_fatto' && c.stato_fatto === 'bosco_naturale'));
-        if (isForest) totalForestM2++;
       });
 
       const corridorLinks = calculateCorridors();
       const corridorBonus = corridorLinks * 2;
       const finalScore = score + corridorBonus;
+      const budgetLeft = START_BUDGET - totalCost;
+      const deltaT = transformedCells > 0 ? (totalCooling / transformedCells).toFixed(1) : "0.0";
 
       document.getElementById('total-score').innerText = `Bio: ${finalScore} PT`;
-      document.getElementById('total-cost').innerText = `Costo: ${totalCost.toLocaleString('it-IT')} €`;
-      document.getElementById('corridor-score').innerText = `Corridoi: ${corridorLinks} link (+${corridorBonus} PT)`;
+      document.getElementById('total-cost').innerText = `Spesa: ${totalCost.toLocaleString('it-IT')} €`;
+      document.getElementById('budget-left-score').innerText = `Residuo: ${budgetLeft.toLocaleString('it-IT')} €`;
+      if (budgetLeft < 0) document.getElementById('budget-left-score').style.color = '#ef4444';
+      else document.getElementById('budget-left-score').style.color = '#74c69d';
 
-      const percForest = Math.min(100, Math.round((totalForestM2 / 3000) * 100));
-      document.getElementById('target-forest-val').innerText = `${percForest}% (${totalForestM2} m²)`;
-      document.getElementById('target-forest-bar').style.width = `${percForest}%`;
+      document.getElementById('corridor-score').innerText = `Corridoi: ${corridorLinks} link (+${corridorBonus} PT)`;
+      document.getElementById('temp-score').innerText = `ΔT UHI: -${deltaT} °C`;
     }
 
     function openInspectModal(feature) {
@@ -612,6 +761,19 @@
       if (map.getSource('cells-source')) map.getSource('cells-source').setData(buildGeoJSON());
     };
 
+    window.openPriceModal = () => { document.getElementById('price-modal').style.display = 'block'; };
+    window.openEcoModal = () => { document.getElementById('eco-modal').style.display = 'block'; };
+
+    // Realtime Supabase per sincronizzare le aree tra utenti
+    function setupRealtime() {
+      dbClient
+        .channel('ambiti-sync')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ambiti_progetto' }, () => {
+          loadOccupiedZones();
+        })
+        .subscribe();
+    }
+
     // Toggle Satellite ESRI
     document.getElementById('toggle-basemap-btn').addEventListener('click', () => {
       isSatellite = !isSatellite;
@@ -636,16 +798,20 @@
       }
     });
 
-    // Esportazione GeoJSON per QGIS
     document.getElementById('export-geojson-btn').addEventListener('click', () => {
       const geo = buildGeoJSON();
       const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geo));
       const a = document.createElement('a');
       a.setAttribute("href", str);
-      a.setAttribute("download", "masterplan_1x1m_analitico.geojson");
+      a.setAttribute("download", "masterplan_1x1m_computo_regionale.geojson");
       document.body.appendChild(a);
       a.click();
       a.remove();
+    });
+
+    map.on('load', () => {
+      loadOccupiedZones();
+      setupRealtime();
     });
   </script>
 </body>
