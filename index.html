@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>OpenLandscape - Realtime Multiplayer Territorial DSS</title>
+  <title>OpenLandscape - DSS Territoriale 3D & Multiplayer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -28,7 +28,6 @@
     .title-group { display: flex; align-items: center; gap: 10px; }
     .title { font-weight: 700; color: var(--accent); font-size: 15px; letter-spacing: 0.5px; }
 
-    /* Badge Progettista */
     .user-pill {
       background: #1e293b; border: 1px solid #3b82f6; color: #93c5fd;
       padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
@@ -39,7 +38,7 @@
     .search-box { display: flex; gap: 6px; }
     .search-input {
       background: #161b22; border: 1px solid #30363d; color: #fff; padding: 5px 8px;
-      border-radius: 6px; font-size: 11px; width: 150px; outline: none;
+      border-radius: 6px; font-size: 11px; width: 140px; outline: none;
     }
     .btn {
       background: var(--accent-dark); border: none; color: #fff; padding: 5px 10px;
@@ -47,13 +46,14 @@
     }
     .btn:hover { filter: brightness(1.2); }
     .btn-secondary { background: #21262d; border: 1px solid #363b42; }
-    .btn-print { background: #1f4068; border: 1px solid #438a5e; }
+    .btn-save { background: #0284c7; border: 1px solid #38bdf8; }
+    .btn-3d { background: #4f46e5; border: 1px solid #818cf8; }
+    .btn-3d.active { background: #6366f1; border-color: #c7d2fe; box-shadow: 0 0 10px rgba(99,102,241,0.6); }
 
     .metrics-container { display: flex; gap: 6px; align-items: center; }
     .metric-badge { background: #132a13; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #31572c; color: #ecf39e; }
     .cost-badge { background: #1a2238; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #3d5a80; color: #98c1d9; }
     .budget-badge { background: #1f2d1f; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #40916c; color: #74c69d; }
-    .temp-badge { background: #3d1a10; padding: 4px 7px; border-radius: 6px; font-weight: 600; font-size: 11px; border: 1px solid #9e2a2b; color: #fec5bb; }
 
     /* Toolbox Laterale */
     .toolbox {
@@ -108,7 +108,7 @@
       font-size: 11px; border: 1px solid var(--border-panel); z-index: 20; color: #eee;
     }
 
-    /* Stile Scheda A4 per Stampa PDF */
+    /* Stampa PDF */
     @media print {
       body { background: #ffffff !important; color: #111111 !important; overflow: visible !important; }
       #map, .header-bar, .toolbox, #cell-info, .info-modal { display: none !important; }
@@ -134,7 +134,7 @@
     <div class="title-group">
       <div class="title">OpenLandscape</div>
       <div class="user-pill" id="user-display" title="Clicca per cambiare nome" onclick="changeUserName()">👤 Caricamento...</div>
-      <span style="font-size:11px; color:#8892b0;" id="current-comparto-label">Nessun Comparto Attivo</span>
+      <span style="font-size:11px; color:#8892b0;" id="current-comparto-label">Nessun Comparto Selezionato</span>
     </div>
 
     <div class="search-box">
@@ -145,13 +145,14 @@
     <div class="metrics-container">
       <div class="budget-badge" id="budget-left-score">Residuo: 150.000 €</div>
       <div class="cost-badge" id="total-cost">Spesa: 0 €</div>
-      <div class="temp-badge" id="temp-score">ΔT: 0.0 °C</div>
-      <div class="metric-badge" id="corridor-score">Corridoi: 0 link</div>
       <div class="metric-badge" id="total-score">Bio: 0 PT</div>
-      <button class="btn btn-secondary" id="release-grid-btn" style="display:none;" onclick="releaseCurrentComparto()">🔓 Rilascia</button>
+      
+      <!-- CONTROLLI OPERATIVI -->
+      <button class="btn btn-save" id="save-btn" style="display:none;" onclick="saveAndLockComparto()">💾 Salva e Prenota</button>
+      <button class="btn btn-secondary" id="release-grid-btn" style="display:none;" onclick="releaseCurrentComparto()">🔓 Esci</button>
+      <button class="btn btn-3d" id="btn-3d" onclick="toggle3DView()">🏢 Vista 3D</button>
       <button class="btn btn-secondary" id="toggle-basemap-btn">🛰️ Satellite</button>
-      <button class="btn btn-print" onclick="generatePdfReport()">📄 Stampa PDF</button>
-      <button class="btn btn-secondary" onclick="openPriceModal()">📋 Prezzi</button>
+      <button class="btn btn-secondary" onclick="generatePdfReport()">📄 Stampa PDF</button>
     </div>
   </div>
 
@@ -179,7 +180,7 @@
     <label>Stato di Fatto Riconosciuto</label>
     <div class="legend-box">
       <div class="legend-row"><div class="legend-color" style="background:#2d5a27;"></div><span>Bosco Naturale Autoctono</span></div>
-      <div class="legend-row"><div class="legend-color" style="background:#40916c;"></div><span>Verde Pubblico / Parco Urbano</span></div>
+      <div class="legend-row"><div class="legend-color" style="background:#40916c;"></div><span>Verde Pubblico / Parco</span></div>
       <div class="legend-row"><div class="legend-color" style="background:#74c69d;"></div><span>Verde Privato / Giardino</span></div>
       <div class="legend-row"><div class="legend-color" style="background:#e76f51;"></div><span>Pista Ciclabile Esistente</span></div>
       <div class="legend-row"><div class="legend-color" style="background:#6c757d;"></div><span>Parcheggio / Piazzale Sosta</span></div>
@@ -201,24 +202,9 @@
     <div class="info-row"><span>Stato di Progetto:</span><b id="inspect-post" style="color:var(--accent);">-</b></div>
     <div class="info-row"><span>Costo Trasformazione:</span><b id="inspect-cost" style="color:#98c1d9;">-</b></div>
     <div class="info-row"><span>Punteggio Biodiversità:</span><span id="inspect-points">-</span></div>
-    <div class="info-row"><span>Rete Ecologica:</span><span id="inspect-corridor">-</span></div>
   </div>
 
-  <!-- Modale Prezzario Esecutivo Opere -->
-  <div class="info-modal" id="price-modal">
-    <div class="info-header">
-      <span class="info-title">Prezzario Opere a Verde & Ingegneria</span>
-      <span class="info-close" onclick="document.getElementById('price-modal').style.display='none'">✕</span>
-    </div>
-    <div class="info-row"><span>Strada / Asfalto ➔ Bosco:</span><b>92.00 €/m²</b></div>
-    <div class="info-row"><span>Parcheggio / Piazzale ➔ Bosco:</span><b>68.00 €/m²</b></div>
-    <div class="info-row"><span>Verde Privato / Incolto ➔ Bosco:</span><b>16.00 €/m²</b></div>
-    <div class="info-row"><span>Seminativo ➔ Prato Fiorito:</span><b>4.50 €/m²</b></div>
-    <div class="info-row"><span>Strada ➔ Ciclabile Ecologica:</span><b>28.00 €/m²</b></div>
-    <div class="info-row"><span>De-pavimentazione suolo impermeabile:</span><b>45.00 €/m²</b></div>
-  </div>
-
-  <!-- Scheda Stampabile PDF -->
+  <!-- Scheda Stampa PDF -->
   <div id="print-sheet">
     <div class="print-header">
       <h1 class="print-title">OpenLandscape // Scheda di Sintesi Esecutiva</h1>
@@ -242,8 +228,6 @@
       <div class="print-card">
         <h4>2. Indicatori Ambientali</h4>
         <div class="print-row"><span>Bio-Punti Conseguiti:</span><b id="p-bio">0 PT</b></div>
-        <div class="print-row"><span>Connessioni di Corridoio:</span><b id="p-corridors">0 link</b></div>
-        <div class="print-row"><span>Mitigazione Termica (ΔT UHI):</span><b id="p-temp">0.0 °C</b></div>
         <div class="print-row"><span>Volume Infiltrato Stimato:</span><b id="p-water">0 m³/anno</b></div>
       </div>
     </div>
@@ -262,7 +246,7 @@
     </table>
   </div>
 
-  <div id="cell-info">Esplora qualsiasi territorio. Clicca su un macro-comparto verde (200x200m) per iniziare.</div>
+  <div id="cell-info">Clicca su un comparto (200x200m) per iniziare. Rimarrà libero per tutti finché non clicchi "Salva e Prenota".</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -276,7 +260,6 @@
 
     const START_BUDGET = 150000;
     
-    // Gestione Codice / Nome Utente
     let currentUserName = localStorage.getItem('openlandscape_user_name') || ("Arch. #" + Math.random().toString(36).substring(2, 6).toUpperCase());
     localStorage.setItem('openlandscape_user_name', currentUserName);
 
@@ -286,7 +269,7 @@
     updateHeaderUser();
 
     window.changeUserName = () => {
-      const nuovo = prompt("Inserisci il tuo nome o codice progettista:", currentUserName);
+      const nuovo = prompt("Inserisci il tuo nome o codice:", currentUserName);
       if (nuovo && nuovo.trim()) {
         currentUserName = nuovo.trim();
         localStorage.setItem('openlandscape_user_name', currentUserName);
@@ -295,14 +278,14 @@
     };
 
     const LANDUSE_META = {
-      bosco_naturale: { name: 'Bosco Naturale Autoctono', baseScore: 12, cooling: 2.8, color: [45, 90, 39, 210] },
-      verde_pubblico: { name: 'Verde Pubblico / Parco', baseScore: 8, cooling: 2.0, color: [64, 145, 108, 200] },
-      verde_privato: { name: 'Verde Privato / Giardino', baseScore: 6, cooling: 1.5, color: [116, 198, 157, 200] },
-      ciclabile_esist: { name: 'Pista Ciclabile Esistente', baseScore: 4, cooling: 0.2, color: [231, 111, 81, 220] },
-      parcheggio: { name: 'Parcheggio / Piazzale', baseScore: 0, cooling: -1.5, color: [108, 117, 125, 210] },
-      strada_asfalto: { name: 'Sede Stradale Asfaltata', baseScore: 0, cooling: -2.0, color: [61, 64, 91, 210] },
-      seminativo: { name: 'Coltivo / Seminativo', baseScore: 2, cooling: 0.5, color: [156, 130, 74, 190] },
-      fabbricato: { name: 'Fabbricato Vincolato', baseScore: 0, cooling: -2.5, color: [164, 22, 26, 230] }
+      bosco_naturale: { name: 'Bosco Naturale Autoctono', baseScore: 12, color: [45, 90, 39, 210] },
+      verde_pubblico: { name: 'Verde Pubblico / Parco', baseScore: 8, color: [64, 145, 108, 200] },
+      verde_privato: { name: 'Verde Privato / Giardino', baseScore: 6, color: [116, 198, 157, 200] },
+      ciclabile_esist: { name: 'Pista Ciclabile Esistente', baseScore: 4, color: [231, 111, 81, 220] },
+      parcheggio: { name: 'Parcheggio / Piazzale', baseScore: 0, color: [108, 117, 125, 210] },
+      strada_asfalto: { name: 'Sede Stradale Asfaltata', baseScore: 0, color: [61, 64, 91, 210] },
+      seminativo: { name: 'Coltivo / Seminativo', baseScore: 2, color: [156, 130, 74, 190] },
+      fabbricato: { name: 'Fabbricato Vincolato', baseScore: 0, color: [164, 22, 26, 230] }
     };
 
     const PROJECT_COLORS = {
@@ -324,20 +307,21 @@
     };
 
     const TOOL_SPECS = {
-      bosco: { score: 12, cooling: 2.8, name: 'Bosco Polifita Autoctono' },
-      umida: { score: 15, cooling: 3.4, name: 'Bacino / Area Umida' },
-      ripariale: { score: 10, cooling: 2.2, name: 'Fascia Tampone Riparia' },
-      prato: { score: 8, cooling: 1.2, name: 'Prato Fiorito Impollinatori' },
-      depav: { score: 18, cooling: 1.8, name: 'De-pavimentazione Drenante' },
-      ciclabile: { score: 5, cooling: 0.2, name: 'Pista Ciclabile' },
-      reset: { score: 0, cooling: 0.0, name: 'Stato di Fatto' },
-      inspect_only: { score: 0, cooling: 0.0, name: 'Ispezione' }
+      bosco: { score: 12, name: 'Bosco Polifita Autoctono' },
+      umida: { score: 15, name: 'Bacino / Area Umida' },
+      ripariale: { score: 10, name: 'Fascia Tampone Riparia' },
+      prato: { score: 8, name: 'Prato Fiorito Impollinatori' },
+      depav: { score: 18, name: 'De-pavimentazione Drenante' },
+      ciclabile: { score: 5, name: 'Pista Ciclabile' },
+      reset: { score: 0, name: 'Stato di Fatto' },
+      inspect_only: { score: 0, name: 'Ispezione' }
     };
 
     let activeTool = "bosco";
     let brushRadius = 1;
     let isMouseDown = false;
     let isSatellite = false;
+    let is3DActive = false;
     let activeComparto = null;
     let macroCompartiList = [];
     let dbOccupiedMap = new Map();
@@ -376,8 +360,69 @@
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [8.181, 45.564],
       zoom: 15,
+      pitch: 0,
+      bearing: 0,
       maxZoom: 22
     });
+
+    // Toggle Vista 3D per Edifici e Boschi Esistenti
+    window.toggle3DView = () => {
+      is3DActive = !is3DActive;
+      const btn = document.getElementById('btn-3d');
+      if (is3DActive) {
+        btn.classList.add('active');
+        map.easeTo({ pitch: 60, bearing: -25, duration: 1000 });
+        enable3DFeatures(true);
+      } else {
+        btn.classList.remove('active');
+        map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+        enable3DFeatures(false);
+      }
+    };
+
+    function enable3DFeatures(enable) {
+      // 1. Edifici Esistenti 3D da OpenStreetMap
+      if (!map.getLayer('osm-3d-buildings')) {
+        map.addLayer({
+          'id': 'osm-3d-buildings',
+          'source': 'carto',
+          'source-layer': 'building',
+          'type': 'fill-extrusion',
+          'minzoom': 14,
+          'paint': {
+            'fill-extrusion-color': '#2e3440',
+            'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, ['coalesce', ['get', 'render_height'], 12]],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.9
+          }
+        });
+      }
+
+      // 2. Boschi Esistenti 3D (Volumetria alberature aggregate)
+      if (!map.getLayer('osm-3d-forests')) {
+        map.addLayer({
+          'id': 'osm-3d-forests',
+          'source': 'carto',
+          'source-layer': 'landuse',
+          'filter': ['in', ['get', 'class'], ['literal', ['forest', 'wood']]],
+          'type': 'fill-extrusion',
+          'minzoom': 14,
+          'paint': {
+            'fill-extrusion-color': '#2d5a27',
+            'fill-extrusion-height': 11, // Volume chiome 11 metri
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.85
+          }
+        });
+      }
+
+      if (map.getLayer('osm-3d-buildings')) {
+        map.setLayoutProperty('osm-3d-buildings', 'visibility', enable ? 'visible' : 'none');
+      }
+      if (map.getLayer('osm-3d-forests')) {
+        map.setLayoutProperty('osm-3d-forests', 'visibility', enable ? 'visible' : 'none');
+      }
+    }
 
     function updateGlobalMacroGrid() {
       if (activeComparto) return;
@@ -484,7 +529,7 @@
             'text-field': [
               'case',
               ['==', ['get', 'status'], 'OCCUPATO'],
-              ['concat', '🔒 OCCUPATO DA\n', ['get', 'claimed_by']],
+              ['concat', '🔒 RISERVATO DA\n', ['get', 'claimed_by']],
               ['concat', 'Comparto 200x200m\n[LIBERO]']
             ],
             'text-size': 11,
@@ -497,7 +542,7 @@
           }
         });
 
-        map.on('click', 'macro-fill', async (e) => {
+        map.on('click', 'macro-fill', (e) => {
           if (activeComparto) return;
           const feature = e.features[0];
           const code = feature.properties.code;
@@ -505,25 +550,15 @@
           const claimer = feature.properties.claimed_by;
 
           if (status === 'OCCUPATO' && claimer !== currentUserName) {
-            alert(`Questo comparto è già occupato da ${claimer}! Scegli un comparto verde libero.`);
+            alert(`Questo comparto è già stato salvato e bloccato da ${claimer}!`);
             return;
           }
 
           const target = macroCompartiList.find(m => m.code === code);
-          target.status = 'OCCUPATO';
-          target.claimed_by = currentUserName;
-
-          await dbClient.from('comparti_territoriali').upsert({
-            code: target.code,
-            status: 'OCCUPATO',
-            claimed_by: currentUserName,
-            center_lon: target.center_lon,
-            center_lat: target.center_lat,
-            bbox: target.bbox
-          });
-
           activeComparto = target;
-          document.getElementById('current-comparto-label').innerText = `Attivo: ${target.code} (200x200m)`;
+
+          document.getElementById('current-comparto-label').innerText = `In Lavorazione: ${target.code} (Libero fino a salvataggio)`;
+          document.getElementById('save-btn').style.display = 'inline-block';
           document.getElementById('release-grid-btn').style.display = 'inline-block';
 
           map.fitBounds([
@@ -544,11 +579,29 @@
       }
     }
 
+    // SALVA E BLOCCA IL COMPARTO (DIVENTA OCCUPATO SOLO ADESSO)
+    window.saveAndLockComparto = async () => {
+      if (!activeComparto) return;
+
+      await dbClient.from('comparti_territoriali').upsert({
+        code: activeComparto.code,
+        status: 'OCCUPATO',
+        claimed_by: currentUserName,
+        center_lon: activeComparto.center_lon,
+        center_lat: activeComparto.center_lat,
+        bbox: activeComparto.bbox
+      });
+
+      dbOccupiedMap.set(activeComparto.code, currentUserName);
+      document.getElementById('current-comparto-label').innerText = `🔒 Progetto Salvato: ${activeComparto.code}`;
+      alert(`Comparto ${activeComparto.code} salvato e riservato con successo a nome di ${currentUserName}!`);
+    };
+
     // Ricerca Geografica
     document.getElementById('address-search-btn').addEventListener('click', async () => {
       const q = document.getElementById('address-input').value.trim();
       if (!q) return;
-      document.getElementById('cell-info').innerText = `Ricerca in corso: ${q}...`;
+      document.getElementById('cell-info').innerText = `Ricerca: ${q}...`;
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (data && data.length > 0) {
@@ -562,7 +615,6 @@
       if (!activeComparto) updateGlobalMacroGrid();
     });
 
-    // Campionamento Rapido con passo a 2m per avvio fulmineo
     function initCanvasGridForComparto(comparto) {
       document.getElementById('cell-info').innerText = "Campionamento uso reale del suolo...";
 
@@ -636,7 +688,7 @@
       }
 
       updateMetrics();
-      document.getElementById('cell-info').innerText = "Comparto pronto. Disegno sincronizzato in tempo reale con gli altri utenti.";
+      document.getElementById('cell-info').innerText = "Comparto pronto. Disegna liberamente; premi 'Salva e Prenota' quando sei pronto.";
     }
 
     function refreshCanvasImage() {
@@ -682,7 +734,6 @@
       return null;
     }
 
-    // Realtime Supabase Broadcast
     function setupRealtimeForComparto(code) {
       if (realtimeChannel) dbClient.removeChannel(realtimeChannel);
 
@@ -693,7 +744,7 @@
       realtimeChannel
         .on('broadcast', { event: 'paint_action' }, (payload) => {
           const { r, c, rad, tool, user } = payload.payload;
-          document.getElementById('cell-info').innerText = `✏️ ${user} sta modificando la mappa in diretta...`;
+          document.getElementById('cell-info').innerText = `✏️ ${user} sta modificando la mappa...`;
           executePaint(r, c, rad, tool, false);
         })
         .subscribe();
@@ -794,7 +845,6 @@
       document.getElementById('inspect-post').innerText = sp === 'stato_di_fatto' ? 'Nessun Intervento' : TOOL_SPECS[sp]?.name;
       document.getElementById('inspect-cost').innerText = diffCost;
       document.getElementById('inspect-points').innerText = `${TOOL_SPECS[sp]?.score || metaPre.baseScore} PT`;
-      document.getElementById('inspect-corridor').innerText = (sp === 'bosco' || sf === 'bosco_naturale') ? 'Attivo nella rete' : 'Non boscato';
 
       document.getElementById('inspect-modal').style.display = 'block';
     }
@@ -804,7 +854,7 @@
     };
 
     function updateMetrics() {
-      let score = 0, totalCost = 0, totalCooling = 0, transformed = 0;
+      let score = 0, totalCost = 0;
       const totalCells = GRID_SIZE * GRID_SIZE;
 
       for (let i = 0; i < totalCells; i++) {
@@ -812,10 +862,8 @@
         const sp = PROJ_KEYS[gridStatoProg[i]];
 
         if (sp !== 'stato_di_fatto') {
-          transformed++;
           const m = COST_MATRIX[sp];
           if (m) totalCost += (m[sf] || 20);
-          totalCooling += TOOL_SPECS[sp].cooling;
           score += TOOL_SPECS[sp].score;
         } else {
           score += LANDUSE_META[sf]?.baseScore || 0;
@@ -823,24 +871,20 @@
       }
 
       const budgetLeft = START_BUDGET - totalCost;
-      const deltaT = transformed > 0 ? (totalCooling / transformed).toFixed(1) : "0.0";
 
       document.getElementById('total-score').innerText = `Bio: ${score} PT`;
       document.getElementById('total-cost').innerText = `Spesa: ${totalCost.toLocaleString('it-IT')} €`;
       document.getElementById('budget-left-score').innerText = `Residuo: ${budgetLeft.toLocaleString('it-IT')} €`;
       document.getElementById('budget-left-score').style.color = budgetLeft < 0 ? '#ef4444' : '#74c69d';
-      document.getElementById('temp-score').innerText = `ΔT: -${deltaT} °C`;
     }
 
+    // Rilascio/Uscita dal comparto
     window.releaseCurrentComparto = async () => {
       if (!activeComparto) return;
-      if (!confirm(`Rilasciare il comparto ${activeComparto.code}?`)) return;
 
-      await dbClient.from('comparti_territoriali').update({ status: 'LIBERO', claimed_by: null }).eq('code', activeComparto.code);
-      dbOccupiedMap.delete(activeComparto.code);
       activeComparto = null;
-
-      document.getElementById('current-comparto-label').innerText = "Nessun Comparto Attivo";
+      document.getElementById('current-comparto-label').innerText = "Nessun Comparto Selezionato";
+      document.getElementById('save-btn').style.display = 'none';
       document.getElementById('release-grid-btn').style.display = 'none';
 
       if (map.getLayer('grid-canvas-layer')) map.setLayoutProperty('grid-canvas-layer', 'visibility', 'none');
@@ -859,8 +903,6 @@
       document.getElementById('p-cost').innerText = document.getElementById('total-cost').innerText.replace('Spesa: ', '');
       document.getElementById('p-budget').innerText = document.getElementById('budget-left-score').innerText.replace('Residuo: ', '');
       document.getElementById('p-bio').innerText = document.getElementById('total-score').innerText.replace('Bio: ', '');
-      document.getElementById('p-corridors').innerText = document.getElementById('corridor-score').innerText.replace('Corridoi: ', '');
-      document.getElementById('p-temp').innerText = document.getElementById('temp-score').innerText.replace('ΔT: ', '');
 
       let countM2 = 0;
       for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
@@ -871,8 +913,6 @@
 
       window.print();
     };
-
-    window.openPriceModal = () => { document.getElementById('price-modal').style.display = 'block'; };
 
     document.getElementById('toggle-basemap-btn').addEventListener('click', () => {
       isSatellite = !isSatellite;
